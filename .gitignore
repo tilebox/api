@@ -1,16 +1,2 @@
 .idea
 .DS_Store
-tmp
-scratch
-
-# SQLite databases
-*.db
-*.db-shm
-*.db-wal
-
-# Ignore non-Go generated files
-**/protogen/python/
-**/protogen/web/
-
-# Added by goreleaser init:
-dist/
