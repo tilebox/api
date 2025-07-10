@@ -1,7 +1,7 @@
 version: v2
 modules:
   - path: apis
-    name: buf.build/tilebox/tilebox-go
+    name: buf.build/tilebox/api
 deps:
   - buf.build/googleapis/googleapis
 lint: # https://buf.build/docs/lint/rules/
