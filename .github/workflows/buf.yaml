@@ -3,8 +3,9 @@ name: Lint Protobuf
 
 on:
   push:
-    branches: [main]
   pull_request:
+    types: [ opened, synchronize, reopened, labeled, unlabeled]
+  delete:
   merge_group:
     branches: ["**"]
 
