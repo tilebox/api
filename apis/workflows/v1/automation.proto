@@ -1,12 +1,16 @@
 // The external API for managing automations in the Workflows service.
 
-syntax = "proto3";
+edition = "2023";
 
 package workflows.v1;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
 import "workflows/v1/core.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // StorageType specifies a kind of storage bucket that we support.
 enum StorageType {

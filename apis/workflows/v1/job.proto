@@ -1,11 +1,15 @@
 // The externally facing API allowing users to interact with jobs.
 
-syntax = "proto3";
+edition = "2023";
 
 package workflows.v1;
 
+import "google/protobuf/go_features.proto";
 import "workflows/v1/core.proto";
 import "workflows/v1/diagram.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // SubmitJobRequest submits and schedules a job for execution. The job can have multiple root tasks.
 message SubmitJobRequest {
@@ -81,7 +85,7 @@ message QueryFilters {
   }
 
   // Filter jobs by automation id.
-  optional UUID automation_id = 3;
+  UUID automation_id = 3 [features.field_presence = EXPLICIT];
 }
 
 // QueryJobsRequest requests a list of jobs.
@@ -89,7 +93,7 @@ message QueryJobsRequest {
   // Filters to apply to the query.
   QueryFilters filters = 1;
   // The pagination parameters for this request.
-  optional Pagination page = 2;
+  Pagination page = 2 [features.field_presence = EXPLICIT];
 }
 
 // A list of jobs.
@@ -97,7 +101,7 @@ message QueryJobsResponse {
   // The jobs.
   repeated Job jobs = 1;
   // The pagination parameters for the next page.
-  optional Pagination next_page = 3;
+  Pagination next_page = 3 [features.field_presence = EXPLICIT];
 }
 
 // GetJobPrototypeRequest requests a clone prototype of a job.

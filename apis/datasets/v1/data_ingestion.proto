@@ -1,10 +1,14 @@
 // Proto messages and service definition for the APIs related to ingesting and deleting datapoints.
 
-syntax = "proto3";
+edition = "2023";
 
 package datasets.v1;
 
 import "datasets/v1/core.proto";
+import "google/protobuf/go_features.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // Legacy ingest request
 // IngestDatapointsRequest is used to ingest one or multiple datapoints into a collection.

@@ -1,11 +1,15 @@
 // Proto messages and service definition for the APIs related to creating and managing datasets.
 
-syntax = "proto3";
+edition = "2023";
 
 package datasets.v1;
 
 import "datasets/v1/core.proto";
 import "datasets/v1/dataset_type.proto";
+import "google/protobuf/go_features.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // CreateDatasetRequest is used to create a new dataset.
 message CreateDatasetRequest {
@@ -95,7 +99,7 @@ message ListDatasetsResponse {
   // Number of datasets that the users organization is the owner of
   int64 owned_datasets = 4;
   // Maximum number of datasets that can be created and therefore owned by the organization. Nil means unlimited.
-  optional int64 maximum_owned_datasets = 5;
+  int64 maximum_owned_datasets = 5 [features.field_presence = EXPLICIT];
 }
 
 // DatasetsService is the CRUD service for Tilebox datasets.
