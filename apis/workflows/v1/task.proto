@@ -1,17 +1,22 @@
 // The internal API a task runner uses to communicate with a workflows-service.
 
-syntax = "proto3";
+edition = "2023";
 
 package workflows.v1;
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/go_features.proto";
 import "workflows/v1/core.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // NextTaskRequest is the request for requesting the next task to run and marking a task as computed.
 message NextTaskRequest {
-  optional ComputedTask computed_task = 1; // The task that has been computed. If not set, the next task will
+  // The task that has been computed. If not set, the next task will
+  ComputedTask computed_task = 1 [features.field_presence = EXPLICIT];
   // The capabilities of the task runner, and therefore the potential tasks that can be run by that task runner.
-  optional NextTaskToRun next_task_to_run = 2;
+  NextTaskToRun next_task_to_run = 2 [features.field_presence = EXPLICIT];
 }
 
 // NextTaskToRun is a message specifying the capabilities of the task runner, and therefore the potential
@@ -52,7 +57,7 @@ message TaskStateResponse {
 // TaskLease is a message specifying the new lease expiration time of a task.
 message TaskLeaseRequest {
   UUID task_id = 1;
-  optional google.protobuf.Duration requested_lease = 2;
+  google.protobuf.Duration requested_lease = 2 [features.field_presence = EXPLICIT];
 }
 
 // A service for task runners to communicate with the workflows service.

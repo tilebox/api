@@ -12,13 +12,17 @@
      - e.g. message Collections contains a list of Collection messages.
 */
 
-syntax = "proto3";
+edition = "2023";
 
 package datasets.v1;
 
 import "datasets/v1/dataset_type.proto";
+import "google/protobuf/go_features.proto";
 // https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
 import "google/protobuf/timestamp.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 /*
  * General, multi purpose messages
@@ -58,19 +62,19 @@ message DatapointInterval {
 // LegacyPagination - used for backwards compatibility, will be removed as soon as all datasets are migrated
 message LegacyPagination {
   // The maximum number of entries to return.
-  optional int64 limit = 1;
+  int64 limit = 1 [features.field_presence = EXPLICIT];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  optional string starting_after = 2;
+  string starting_after = 2 [features.field_presence = EXPLICIT];
 }
 
 // Pagination information for paginated queries
 message Pagination {
   // The maximum number of entries to return.
-  optional int64 limit = 1;
+  int64 limit = 1 [features.field_presence = EXPLICIT];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  optional ID starting_after = 2;
+  ID starting_after = 2 [features.field_presence = EXPLICIT];
 }
 
 // Any is a message that can hold any other message as bytes.
@@ -98,7 +102,7 @@ message RepeatedAny {
 message DatapointMetadata {
   google.protobuf.Timestamp event_time = 1; // The time the message was received by the on-board computer.
   google.protobuf.Timestamp ingestion_time = 2; // The time the message was ingested by Tilebox.
-  optional string id = 3; // The external id of the datapoint.
+  string id = 3 [features.field_presence = EXPLICIT]; // The external id of the datapoint.
 }
 
 // Datapoints is a list of datapoints in a Tilebox dataset, with all data points sharing the same type.
@@ -111,7 +115,7 @@ message Datapoints {
 message DatapointPage {
   repeated DatapointMetadata meta = 1; // A metadata for a datapoint.
   RepeatedAny data = 2; // The datapoints.
-  optional LegacyPagination next_page = 3; // The pagination parameters for the next page.
+  LegacyPagination next_page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for the next page.
 }
 
 // Datapoint is a single datapoint in a Tilebox Dataset
@@ -130,8 +134,8 @@ message Collection {
 // CollectionInfo contains information about the data available in a dataset collection
 message CollectionInfo {
   Collection collection = 1;
-  optional TimeInterval availability = 2; // The time interval for which data is available.
-  optional uint64 count = 3; // Number of entries in the dataset.
+  TimeInterval availability = 2 [features.field_presence = EXPLICIT]; // The time interval for which data is available.
+  uint64 count = 3 [features.field_presence = EXPLICIT]; // Number of entries in the dataset.
 }
 
 // CollectionInfos contains a list of CollectionInfo messages.

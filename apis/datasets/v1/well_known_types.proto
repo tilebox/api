@@ -1,14 +1,18 @@
 // This file contains some well-known types that are available to use for all dataset protobuf messages.
 // They are specially handled in our client libraries and converted to the corresponding representations.
 
-syntax = "proto3";
+edition = "2023";
 package datasets.v1;
 
 // in addition to the well-known types defined here, we also include Timestamp and Duration
 // buf:lint:ignore IMPORT_USED
 import "google/protobuf/duration.proto";
+import "google/protobuf/go_features.proto";
 // buf:lint:ignore IMPORT_USED
 import "google/protobuf/timestamp.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // Bytes field (in message)
 message UUID {

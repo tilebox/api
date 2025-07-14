@@ -1,8 +1,13 @@
 // Diagram service for rendering diagrams
 
-syntax = "proto3";
+edition = "2023";
 
 package workflows.v1;
+
+import "google/protobuf/go_features.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // Request to render a diagram
 message RenderDiagramRequest {
@@ -17,7 +22,7 @@ message RenderOptions {
   string layout = 1;
 
   // The D2 theme to use when rendering the diagram: https://d2lang.com/tour/themes/
-  optional int64 theme_id = 2;
+  int64 theme_id = 2 [features.field_presence = EXPLICIT];
 
   // Whether to render the diagram in a sketchy (hand-drawn) style
   bool sketchy = 3;

@@ -1,11 +1,15 @@
 // Core types for workflows.
 
-syntax = "proto3";
+edition = "2023";
 
 package workflows.v1;
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
 
 // A cluster is a grouping of tasks that are related.
 message Cluster {
@@ -57,9 +61,9 @@ message Task {
   // Unique identifier for the task. Used by runners to match tasks to specific functions.
   TaskIdentifier identifier = 2;
   TaskState state = 3; // The current state of the task.
-  optional bytes input = 4; // The serialized input parameters for the task in the format that this task expects.
+  bytes input = 4 [features.field_presence = EXPLICIT]; // The serialized input parameters for the task in the format that this task expects.
   // Display is a human readable representation of the Task used for printing or visualizations
-  optional string display = 5;
+  string display = 5 [features.field_presence = EXPLICIT];
   Job job = 6; // The job that this task belongs to.
   UUID parent_id = 7; // The id of the parent task.
   repeated UUID depends_on = 8; // The ids of the tasks that this task depends on.
@@ -147,8 +151,8 @@ message IDInterval {
 // Pagination information for paginated queries
 message Pagination {
   // The maximum number of entries to return.
-  optional int64 limit = 1;
+  int64 limit = 1 [features.field_presence = EXPLICIT];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  optional UUID starting_after = 2;
+  UUID starting_after = 2 [features.field_presence = EXPLICIT];
 }
