@@ -6,13 +6,14 @@ package datasets.v1;
 
 import "datasets/v1/core.proto";
 import "google/protobuf/go_features.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // CreateCollectionRequest is used to create a new collection.
 message CreateCollectionRequest {
-  ID dataset_id = 1; // The dataset id where the collection should be created.
+  tilebox.v1.ID dataset_id = 1; // The dataset id where the collection should be created.
   string name = 2; // The name of the collection to create.
 }
 
@@ -21,13 +22,13 @@ message GetCollectionByNameRequest {
   string collection_name = 1; // The name of the collection to retrieve.
   bool with_availability = 2; // If true, the response will include the availability interval.
   bool with_count = 3; // If true, the response will include the number of entries.
-  ID dataset_id = 4; // The dataset id.
+  tilebox.v1.ID dataset_id = 4; // The dataset id.
 }
 
 // DeleteCollectionRequest contains the request parameters for deleting a single collection.
 message DeleteCollectionRequest {
-  ID collection_id = 1; // The id of the collection to delete.
-  ID dataset_id = 2; // The dataset id.
+  tilebox.v1.ID collection_id = 1; // The id of the collection to delete.
+  tilebox.v1.ID dataset_id = 2; // The dataset id.
 }
 
 // DeleteCollectionResponse is the response to DeleteCollectionRequest.
@@ -36,7 +37,7 @@ message DeleteCollectionResponse {}
 // ListCollectionsRequest contains the request parameters
 // for retrieving a list of all available collections for a given dataset.
 message ListCollectionsRequest {
-  ID dataset_id = 1; // The dataset id.
+  tilebox.v1.ID dataset_id = 1; // The dataset id.
   bool with_availability = 2; // If true, the response will include the availability interval.
   bool with_count = 3; // If true, the response will include the number of entries.
 }

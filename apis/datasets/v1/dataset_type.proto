@@ -8,6 +8,7 @@ import "datasets/v1/well_known_types.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
@@ -69,7 +70,7 @@ message AnnotatedType {
 // message types that are Temporal Datasets.
 message TemporalDatapoint {
   google.protobuf.Timestamp time = 1; // The timestamp associated with ach data point.
-  UUID id = 2; // A universally unique identifier (UUID) that uniquely identifies each data point.
+  tilebox.v1.ID id = 2; // A universally unique identifier (UUID) that uniquely identifies each data point.
   google.protobuf.Timestamp ingestion_time = 3; // The time the data point was ingested into the Tilebox API.
 }
 
@@ -77,7 +78,7 @@ message TemporalDatapoint {
 // message types that are spatiotemporal Datasets.
 message SpatioTemporalDatapoint {
   google.protobuf.Timestamp time = 1; // The timestamp associated with each data point.
-  UUID id = 2; // A universally unique identifier (UUID) that uniquely identifies each data point.
+  tilebox.v1.ID id = 2; // A universally unique identifier (UUID) that uniquely identifies each data point.
   google.protobuf.Timestamp ingestion_time = 3; // The time the data point was ingested into the Tilebox API.
   Geometry geometry = 4; // The geometry associated with each data point.
 }

@@ -5,6 +5,7 @@ edition = "2023";
 package workflows.v1;
 
 import "google/protobuf/go_features.proto";
+import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 import "workflows/v1/diagram.proto";
 
@@ -20,19 +21,19 @@ message SubmitJobRequest {
   // Tracing information for the job. This is used to propagate tracing information to the workers that execute the job.
   string trace_parent = 3;
   // Optional. The ID of the automation that submits this job.
-  UUID automation_id = 4;
+  tilebox.v1.ID automation_id = 4;
 }
 
 // GetJobRequest requests details for a job.
 message GetJobRequest {
   // The ID of the job to get details for.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
 }
 
 // RetryJobRequest requests a retry of a job that has failed.
 message RetryJobRequest {
   // The job to retry.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
 }
 
 // RetryJobResponse is the response to a RetryJobRequest.
@@ -44,7 +45,7 @@ message RetryJobResponse {
 // CancelJobRequest requests a cancel of a job.
 message CancelJobRequest {
   // The job to cancel.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
 }
 
 // CancelJobResponse is the response to a CancelJobRequest.
@@ -64,7 +65,7 @@ enum WorkflowDiagramTheme {
 // VisualizeJobRequest requests a visualization of a job.
 message VisualizeJobRequest {
   // The job to visualize.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
 
   // The options for rendering the diagram
   RenderOptions render_options = 2;
@@ -85,7 +86,7 @@ message QueryFilters {
   }
 
   // Filter jobs by automation id.
-  UUID automation_id = 3 [features.field_presence = EXPLICIT];
+  tilebox.v1.ID automation_id = 3 [features.field_presence = EXPLICIT];
 }
 
 // QueryJobsRequest requests a list of jobs.
@@ -107,7 +108,7 @@ message QueryJobsResponse {
 // GetJobPrototypeRequest requests a clone prototype of a job.
 message GetJobPrototypeRequest {
   // The ID of the job to get a clone prototype for.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
 }
 
 // A clone prototype of a job.
@@ -121,7 +122,7 @@ message GetJobPrototypeResponse {
 // CloneJobRequest requests a clone of a job.
 message CloneJobRequest {
   // The ID of the job to clone.
-  UUID job_id = 1;
+  tilebox.v1.ID job_id = 1;
   // The updated root tasks of the job.
   repeated TaskSubmission root_tasks_overrides = 2;
   // The name of the job.

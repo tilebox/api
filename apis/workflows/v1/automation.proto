@@ -7,6 +7,7 @@ package workflows.v1;
 import "google/protobuf/empty.proto";
 import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
+import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
@@ -22,7 +23,7 @@ enum StorageType {
 
 // Storage location is some kind of storage that can contain data files or objects and be used as a trigger source.
 message StorageLocation {
-  UUID id = 1; // Unique identifier for the storage location
+  tilebox.v1.ID id = 1; // Unique identifier for the storage location
   string location = 2; // A unique identifier for the storage location in the storage system
   StorageType type = 3; // The type of the storage location, e.g. GCS, S3, FS
 }
@@ -35,7 +36,7 @@ message StorageLocations {
 // AutomationPrototype is a task prototype that can result in many submitted tasks. Task submissions are triggered by
 // NRT triggers, such as bucket triggers or cron triggers.
 message AutomationPrototype {
-  UUID id = 1; // Unique identifier for the trigger
+  tilebox.v1.ID id = 1; // Unique identifier for the trigger
   string name = 2; // A human-readable name for the trigger
   TaskSubmission prototype = 3; // The task submission to trigger
 
@@ -51,14 +52,14 @@ message Automations {
 // StorageEventTrigger is a trigger that will trigger a task submission when an object matching the glob pattern is
 // created in a storage location.
 message StorageEventTrigger {
-  UUID id = 1; // Unique identifier for the trigger
+  tilebox.v1.ID id = 1; // Unique identifier for the trigger
   StorageLocation storage_location = 2; // The storage location to watch for events
   string glob_pattern = 3; // A glob pattern to match objects/files in the storage location
 }
 
 // CronTrigger is a trigger that will trigger a task submission on a schedule.
 message CronTrigger {
-  UUID id = 1; // Unique identifier for the trigger
+  tilebox.v1.ID id = 1; // Unique identifier for the trigger
   string schedule = 2; // A cron schedule for the trigger, e.g. "0 0 * * *" (every day at midnight)
 }
 
@@ -79,7 +80,7 @@ enum StorageEventType {
 
 // TriggeredStorageEvent contains the details of the concrete event that triggered a storage event trigger.
 message TriggeredStorageEvent {
-  UUID storage_location_id = 1; // The storage location that triggered the task
+  tilebox.v1.ID storage_location_id = 1; // The storage location that triggered the task
   StorageEventType type = 2; // The type of the storage event, e.g. created
   // The object that triggered the task, e.g. a file name in a directory or object name in a bucket
   string location = 3;
@@ -93,7 +94,7 @@ message TriggeredCronEvent {
 // DeleteAutomationRequest requests the deletion of an automation.
 message DeleteAutomationRequest {
   // The ID of the automation to delete.
-  UUID automation_id = 1;
+  tilebox.v1.ID automation_id = 1;
   // Whether to cancel all jobs that have been created by this automation.
   bool cancel_jobs = 2;
 }
@@ -105,16 +106,16 @@ service AutomationService {
   // ListStorageLocations lists all the storage buckets that are available for use as bucket triggers.
   rpc ListStorageLocations(google.protobuf.Empty) returns (StorageLocations);
   // GetStorageLocation gets a storage location by its ID.
-  rpc GetStorageLocation(UUID) returns (StorageLocation);
+  rpc GetStorageLocation(tilebox.v1.ID) returns (StorageLocation);
   // CreateStorageLocation creates a new storage bucket.
   rpc CreateStorageLocation(StorageLocation) returns (StorageLocation);
   // DeleteStorageLocation deletes a storage location.
-  rpc DeleteStorageLocation(UUID) returns (google.protobuf.Empty);
+  rpc DeleteStorageLocation(tilebox.v1.ID) returns (google.protobuf.Empty);
 
   // ListAutomations lists all the automations that are currently registered in a namespace.
   rpc ListAutomations(google.protobuf.Empty) returns (Automations);
   // GetAutomation gets an automation by its ID.
-  rpc GetAutomation(UUID) returns (AutomationPrototype);
+  rpc GetAutomation(tilebox.v1.ID) returns (AutomationPrototype);
   // CreateAutomation creates a new automation in a namespace.
   rpc CreateAutomation(AutomationPrototype) returns (AutomationPrototype);
   // UpdateAutomation updates an automation in a namespace.

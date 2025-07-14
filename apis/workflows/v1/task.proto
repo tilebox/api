@@ -6,6 +6,7 @@ package workflows.v1;
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/go_features.proto";
+import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
@@ -28,7 +29,7 @@ message NextTaskToRun {
 
 // ComputedTask is a message specifying a task that has been computed by the task runner.
 message ComputedTask {
-  UUID id = 1; // The id of the task that has been computed.
+  tilebox.v1.ID id = 1; // The id of the task that has been computed.
   // A display name for the task that has been computed for visualization purposes.
   // If not set, the display message specified upon task submission will be kept.
   string display = 2;
@@ -43,7 +44,7 @@ message NextTaskResponse {
 
 // TaskFailedRequest is the request for marking a task as failed.
 message TaskFailedRequest {
-  UUID task_id = 1;
+  tilebox.v1.ID task_id = 1;
   string display = 2;
   bool cancel_job = 3;
 }
@@ -56,7 +57,7 @@ message TaskStateResponse {
 
 // TaskLease is a message specifying the new lease expiration time of a task.
 message TaskLeaseRequest {
-  UUID task_id = 1;
+  tilebox.v1.ID task_id = 1;
   google.protobuf.Duration requested_lease = 2 [features.field_presence = EXPLICIT];
 }
 
