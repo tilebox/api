@@ -6,6 +6,7 @@ package workflows.v1;
 
 import "google/protobuf/go_features.proto";
 import "tilebox/v1/id.proto";
+import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
 import "workflows/v1/diagram.proto";
 
@@ -81,8 +82,8 @@ message VisualizeJobRequest {
 message QueryFilters {
   // Either a time interval or ID interval must be set, but not both.
   oneof temporal_extent {
-    TimeInterval time_interval = 1;
-    IDInterval id_interval = 2;
+    tilebox.v1.TimeInterval time_interval = 1;
+    tilebox.v1.IDInterval id_interval = 2;
   }
 
   // Filter jobs by automation id.
@@ -94,7 +95,7 @@ message QueryJobsRequest {
   // Filters to apply to the query.
   QueryFilters filters = 1;
   // The pagination parameters for this request.
-  Pagination page = 2 [features.field_presence = EXPLICIT];
+  tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
 }
 
 // A list of jobs.
@@ -102,7 +103,7 @@ message QueryJobsResponse {
   // The jobs.
   repeated Job jobs = 1;
   // The pagination parameters for the next page.
-  Pagination next_page = 3 [features.field_presence = EXPLICIT];
+  tilebox.v1.Pagination next_page = 3 [features.field_presence = EXPLICIT];
 }
 
 // GetJobPrototypeRequest requests a clone prototype of a job.
