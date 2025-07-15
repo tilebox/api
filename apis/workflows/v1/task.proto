@@ -5,11 +5,9 @@ edition = "2023";
 package workflows.v1;
 
 import "google/protobuf/duration.proto";
-import "google/protobuf/go_features.proto";
 import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
-option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // NextTaskRequest is the request for requesting the next task to run and marking a task as computed.

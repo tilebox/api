@@ -6,11 +6,9 @@ package datasets.v1;
 
 import "datasets/v1/core.proto";
 import "datasets/v1/well_known_types.proto";
-import "google/protobuf/go_features.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
-option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // Legacy message, to be removed in the future.

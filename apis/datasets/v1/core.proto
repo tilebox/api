@@ -17,13 +17,11 @@ edition = "2023";
 package datasets.v1;
 
 import "datasets/v1/dataset_type.proto";
-import "google/protobuf/go_features.proto";
 // https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
-option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // LegacyPagination - used for backwards compatibility, will be removed as soon as all datasets are migrated

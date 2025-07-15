@@ -6,10 +6,8 @@ package datasets.v1;
 
 import "datasets/v1/core.proto";
 import "datasets/v1/dataset_type.proto";
-import "google/protobuf/go_features.proto";
 import "tilebox/v1/id.proto";
 
-option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // CreateDatasetRequest is used to create a new dataset.
