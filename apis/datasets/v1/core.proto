@@ -20,16 +20,10 @@ import "datasets/v1/dataset_type.proto";
 import "google/protobuf/go_features.proto";
 // https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
 import "google/protobuf/timestamp.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
-
-/*
- * General, multi purpose messages
- */
-message ID {
-  bytes uuid = 1;
-}
 
 // A time interval
 message TimeInterval {
@@ -46,8 +40,8 @@ message TimeInterval {
 
 // A datapoint interval
 message DatapointInterval {
-  ID start_id = 1; // The id of the first data point in the interval.
-  ID end_id = 2; // The id of the last data point in the interval.
+  tilebox.v1.ID start_id = 1; // The id of the first data point in the interval.
+  tilebox.v1.ID end_id = 2; // The id of the last data point in the interval.
 
   // We use exclusive for start and inclusive for end, because that way when both are false
   // we have a half-open interval [start, end) which is the default behaviour we want to achieve.
@@ -74,7 +68,7 @@ message Pagination {
   int64 limit = 1 [features.field_presence = EXPLICIT];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  ID starting_after = 2 [features.field_presence = EXPLICIT];
+  tilebox.v1.ID starting_after = 2 [features.field_presence = EXPLICIT];
 }
 
 // Any is a message that can hold any other message as bytes.
@@ -128,7 +122,7 @@ message Datapoint {
 message Collection {
   string legacy_id = 1; // Here for backwards compatibility, to be removed in the future.
   string name = 2;
-  ID id = 3;
+  tilebox.v1.ID id = 3;
 }
 
 // CollectionInfo contains information about the data available in a dataset collection
@@ -146,9 +140,9 @@ message CollectionInfos {
 // Dataset contains information about a single dataset
 message Dataset {
   // dataset id
-  ID id = 1;
+  tilebox.v1.ID id = 1;
   // the dataset group to which this dataset belongs
-  ID group_id = 2;
+  tilebox.v1.ID group_id = 2;
   // the type of the dataset
   AnnotatedType type = 3;
   // normalized snake case name of the dataset, which can be used as a valid code identifier
@@ -190,9 +184,9 @@ enum Visibility {
 // DatasetGroup represent a dataset group
 message DatasetGroup {
   // group id
-  ID id = 1;
+  tilebox.v1.ID id = 1;
   // optional parent group id
-  ID parent_id = 2;
+  tilebox.v1.ID parent_id = 2;
   // normalized snake case name of the dataset group, which can be used as a valid code identifier
   string code_name = 3;
   // display name of the group

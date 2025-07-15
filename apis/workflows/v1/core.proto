@@ -7,6 +7,7 @@ package workflows.v1;
 import "google/protobuf/duration.proto";
 import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
@@ -21,7 +22,7 @@ message Cluster {
 
 // A job is a logical grouping of tasks that are related.
 message Job {
-  UUID id = 1;
+  tilebox.v1.ID id = 1;
   string name = 2;
   string trace_parent = 3;
   reserved 4;
@@ -30,7 +31,7 @@ message Job {
   google.protobuf.Timestamp submitted_at = 7; // The time the job was submitted.
   google.protobuf.Timestamp started_at = 8; // The time the job started running.
   repeated TaskSummary task_summaries = 9; // The task' summaries of the job.
-  UUID automation_id = 10; // The automation that submitted the job.
+  tilebox.v1.ID automation_id = 10; // The automation that submitted the job.
 }
 
 // The state of a job.
@@ -46,10 +47,10 @@ enum JobState {
 
 // A summary of a task. Mainly used in the Console.
 message TaskSummary {
-  UUID id = 1;
+  tilebox.v1.ID id = 1;
   string display = 2;
   TaskState state = 3;
-  UUID parent_id = 4;
+  tilebox.v1.ID parent_id = 4;
   reserved 5; // depends_on in case we want to add that in the future
   google.protobuf.Timestamp started_at = 6;
   google.protobuf.Timestamp stopped_at = 7;
@@ -57,7 +58,7 @@ message TaskSummary {
 
 // A task is a single unit of work.
 message Task {
-  UUID id = 1; // The id of the task instance. Contains the submission timestamp as the time part of the ULID.
+  tilebox.v1.ID id = 1; // The id of the task instance. Contains the submission timestamp as the time part of the ULID.
   // Unique identifier for the task. Used by runners to match tasks to specific functions.
   TaskIdentifier identifier = 2;
   TaskState state = 3; // The current state of the task.
@@ -65,8 +66,8 @@ message Task {
   // Display is a human readable representation of the Task used for printing or visualizations
   string display = 5 [features.field_presence = EXPLICIT];
   Job job = 6; // The job that this task belongs to.
-  UUID parent_id = 7; // The id of the parent task.
-  repeated UUID depends_on = 8; // The ids of the tasks that this task depends on.
+  tilebox.v1.ID parent_id = 7; // The id of the parent task.
+  repeated tilebox.v1.ID depends_on = 8; // The ids of the tasks that this task depends on.
   TaskLease lease = 9; // The lease of the task.
   int64 retry_count = 10; // The number of times this task has been retried.
 }
@@ -109,11 +110,6 @@ message TaskSubmission {
   int64 max_retries = 6; // The maximum number of retries for this task.
 }
 
-// Bytes field (in message)
-message UUID {
-  bytes uuid = 1;
-}
-
 // A lease for a task.
 message TaskLease {
   google.protobuf.Duration lease = 1;
@@ -135,8 +131,8 @@ message TimeInterval {
 
 // An ID interval
 message IDInterval {
-  UUID start_id = 1; // The id of the first data point in the interval.
-  UUID end_id = 2; // The id of the last data point in the interval.
+  tilebox.v1.ID start_id = 1; // The id of the first data point in the interval.
+  tilebox.v1.ID end_id = 2; // The id of the last data point in the interval.
 
   // We use exclusive for start and inclusive for end, because that way when both are false
   // we have a half-open interval [start, end) which is the default behaviour we want to achieve.
@@ -154,5 +150,5 @@ message Pagination {
   int64 limit = 1 [features.field_presence = EXPLICIT];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  UUID starting_after = 2 [features.field_presence = EXPLICIT];
+  tilebox.v1.ID starting_after = 2 [features.field_presence = EXPLICIT];
 }

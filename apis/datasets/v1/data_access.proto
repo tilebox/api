@@ -7,6 +7,7 @@ package datasets.v1;
 import "datasets/v1/core.proto";
 import "datasets/v1/well_known_types.proto";
 import "google/protobuf/go_features.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
@@ -38,8 +39,8 @@ message GetDatapointByIdRequest {
 
 // QueryByIDRequest contains the request parameters for retrieving a single data point by its id.
 message QueryByIDRequest {
-  repeated ID collection_ids = 1; // collection ids to query.
-  ID id = 2; // The id of the requested data point.
+  repeated tilebox.v1.ID collection_ids = 1; // collection ids to query.
+  tilebox.v1.ID id = 2; // The id of the requested data point.
   bool skip_data = 3; // If true, only the datapoint metadata is returned.
 }
 
@@ -78,7 +79,7 @@ message SpatialFilter {
 
 // QueryRequest contains the request parameters for retrieving data from a Tilebox dataset.
 message QueryRequest {
-  repeated ID collection_ids = 1; // collection ids to query.
+  repeated tilebox.v1.ID collection_ids = 1; // collection ids to query.
   QueryFilters filters = 2; // Filters to apply to the query.
 
   Pagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.

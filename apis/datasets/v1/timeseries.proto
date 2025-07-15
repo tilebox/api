@@ -7,6 +7,7 @@ package datasets.v1;
 import "datasets/v1/core.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/go_features.proto";
+import "tilebox/v1/id.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
@@ -14,8 +15,8 @@ option features.field_presence = IMPLICIT;
 // TimeseriesDatasetChunk is a message that represents a chunk of a timeseries dataset.
 // used by workflow tasks that are executed once for each datapoint in a timeseries dataset
 message TimeseriesDatasetChunk {
-  ID dataset_id = 1;
-  ID collection_id = 2;
+  tilebox.v1.ID dataset_id = 1;
+  tilebox.v1.ID collection_id = 2;
   TimeInterval time_interval = 3;
   DatapointInterval datapoint_interval = 4;
   int32 branch_factor = 5;

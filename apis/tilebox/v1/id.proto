@@ -1,0 +1,13 @@
+edition = "2023";
+
+package tilebox.v1;
+
+import "google/protobuf/go_features.proto";
+
+option features.(pb.go).api_level = API_OPAQUE;
+option features.field_presence = IMPLICIT;
+
+// Bytes field (in message)
+message ID {
+  bytes uuid = 1;
+}
