@@ -8,6 +8,7 @@ import "datasets/v1/core.proto";
 import "datasets/v1/well_known_types.proto";
 import "google/protobuf/go_features.proto";
 import "tilebox/v1/id.proto";
+import "tilebox/v1/query.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
@@ -18,8 +19,8 @@ message GetDatasetForIntervalRequest {
   string collection_id = 1; // The collection id.
 
   // Either time interval or datapoint interval must be set, but not both.
-  TimeInterval time_interval = 2; // The time interval for which data is requested.
-  DatapointInterval datapoint_interval = 6; // The datapoint interval for which data is requested.
+  tilebox.v1.TimeInterval time_interval = 2; // The time interval for which data is requested.
+  tilebox.v1.IDInterval datapoint_interval = 6; // The datapoint interval for which data is requested.
 
   LegacyPagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.
   bool skip_data = 4; // If true, the datapoint data is not returned.
@@ -48,8 +49,8 @@ message QueryByIDRequest {
 message QueryFilters {
   // Either a time interval or datapoint interval must be set, but not both.
   oneof temporal_extent {
-    TimeInterval time_interval = 1;
-    DatapointInterval datapoint_interval = 2;
+    tilebox.v1.TimeInterval time_interval = 1;
+    tilebox.v1.IDInterval datapoint_interval = 2;
   }
 
   SpatialFilter spatial_extent = 3;
@@ -82,14 +83,14 @@ message QueryRequest {
   repeated tilebox.v1.ID collection_ids = 1; // collection ids to query.
   QueryFilters filters = 2; // Filters to apply to the query.
 
-  Pagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.
+  tilebox.v1.Pagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.
   bool skip_data = 4; // If true, only datapoint metadata, such as id, time and ingestion_time are returned.
 }
 
 // QueryResultPage is a single page of data points of a Tilebox dataset
 message QueryResultPage {
   RepeatedAny data = 1; // The datapoints.
-  Pagination next_page = 2 [features.field_presence = EXPLICIT]; // The pagination parameters for the next page.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT]; // The pagination parameters for the next page.
 }
 
 // DataAccessService provides data access and querying capabilities for Tilebox datasets.

@@ -21,37 +21,10 @@ import "google/protobuf/go_features.proto";
 // https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
+import "tilebox/v1/query.proto";
 
 option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
-
-// A time interval
-message TimeInterval {
-  google.protobuf.Timestamp start_time = 1; // Start time of the interval.
-  google.protobuf.Timestamp end_time = 2; // End time of the interval.
-
-  // We use exclusive for start and inclusive for end, because that way when both are false
-  // we have a half-open interval [start, end) which is the default behaviour we want to achieve.
-  // Flag indicating whether the start time is exclusive. If true, the start time is not included in the interval.
-  bool start_exclusive = 3;
-  // Flag indicating whether the end time is inclusive. If true, the end time is included in the interval.
-  bool end_inclusive = 4;
-}
-
-// A datapoint interval
-message DatapointInterval {
-  tilebox.v1.ID start_id = 1; // The id of the first data point in the interval.
-  tilebox.v1.ID end_id = 2; // The id of the last data point in the interval.
-
-  // We use exclusive for start and inclusive for end, because that way when both are false
-  // we have a half-open interval [start, end) which is the default behaviour we want to achieve.
-  // Flag indicating whether the start id is exclusive.
-  // If true, the datapoint with the given start id is not included in the interval.
-  bool start_exclusive = 3;
-  // Flag indicating whether the end id is inclusive.
-  // If true, the datapoint with the given end id is included in the interval.
-  bool end_inclusive = 4;
-}
 
 // LegacyPagination - used for backwards compatibility, will be removed as soon as all datasets are migrated
 message LegacyPagination {
@@ -60,15 +33,6 @@ message LegacyPagination {
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
   string starting_after = 2 [features.field_presence = EXPLICIT];
-}
-
-// Pagination information for paginated queries
-message Pagination {
-  // The maximum number of entries to return.
-  int64 limit = 1 [features.field_presence = EXPLICIT];
-  // Return entries starting after this entry.
-  // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  tilebox.v1.ID starting_after = 2 [features.field_presence = EXPLICIT];
 }
 
 // Any is a message that can hold any other message as bytes.
@@ -128,7 +92,7 @@ message Collection {
 // CollectionInfo contains information about the data available in a dataset collection
 message CollectionInfo {
   Collection collection = 1;
-  TimeInterval availability = 2 [features.field_presence = EXPLICIT]; // The time interval for which data is available.
+  tilebox.v1.TimeInterval availability = 2 [features.field_presence = EXPLICIT]; // The time interval for which data is available.
   uint64 count = 3 [features.field_presence = EXPLICIT]; // Number of entries in the dataset.
 }
 
