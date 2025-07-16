@@ -6,11 +6,9 @@ package datasets.v1;
 
 import "datasets/v1/well_known_types.proto";
 import "google/protobuf/descriptor.proto";
-import "google/protobuf/go_features.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 
-option features.(pb.go).api_level = API_OPAQUE;
 option features.field_presence = IMPLICIT;
 
 // Field describes a field of a dataset.
