@@ -4,6 +4,7 @@ modules:
     name: buf.build/tilebox/api
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/bufbuild/protovalidate
 lint: # https://buf.build/docs/lint/rules/
   use: # enable all linters
     - STANDARD

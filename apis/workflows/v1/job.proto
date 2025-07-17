@@ -4,6 +4,7 @@ edition = "2023";
 
 package workflows.v1;
 
+import "buf/validate/validate.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
@@ -14,11 +15,14 @@ option features.field_presence = IMPLICIT;
 // SubmitJobRequest submits and schedules a job for execution. The job can have multiple root tasks.
 message SubmitJobRequest {
   // The root tasks for the job.
-  repeated TaskSubmission tasks = 1;
+  repeated TaskSubmission tasks = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 64
+  }];
   // The name of the job.
-  string job_name = 2;
+  string job_name = 2 [(buf.validate.field).string.min_bytes = 1];
   // Tracing information for the job. This is used to propagate tracing information to the workers that execute the job.
-  string trace_parent = 3;
+  string trace_parent = 3 [(buf.validate.field).string.min_bytes = 1];
   // Optional. The ID of the automation that submits this job.
   tilebox.v1.ID automation_id = 4;
 }
@@ -26,13 +30,13 @@ message SubmitJobRequest {
 // GetJobRequest requests details for a job.
 message GetJobRequest {
   // The ID of the job to get details for.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
 // RetryJobRequest requests a retry of a job that has failed.
 message RetryJobRequest {
   // The job to retry.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
 // RetryJobResponse is the response to a RetryJobRequest.
@@ -44,7 +48,7 @@ message RetryJobResponse {
 // CancelJobRequest requests a cancel of a job.
 message CancelJobRequest {
   // The job to cancel.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
 // CancelJobResponse is the response to a CancelJobRequest.
@@ -64,7 +68,7 @@ enum WorkflowDiagramTheme {
 // VisualizeJobRequest requests a visualization of a job.
 message VisualizeJobRequest {
   // The job to visualize.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 
   // The options for rendering the diagram
   RenderOptions render_options = 2;
@@ -80,6 +84,7 @@ message VisualizeJobRequest {
 message QueryFilters {
   // Either a time interval or ID interval must be set, but not both.
   oneof temporal_extent {
+    option (buf.validate.oneof).required = true;
     tilebox.v1.TimeInterval time_interval = 1;
     tilebox.v1.IDInterval id_interval = 2;
   }
@@ -107,7 +112,7 @@ message QueryJobsResponse {
 // GetJobPrototypeRequest requests a clone prototype of a job.
 message GetJobPrototypeRequest {
   // The ID of the job to get a clone prototype for.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
 // A clone prototype of a job.
@@ -121,11 +126,14 @@ message GetJobPrototypeResponse {
 // CloneJobRequest requests a clone of a job.
 message CloneJobRequest {
   // The ID of the job to clone.
-  tilebox.v1.ID job_id = 1;
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
   // The updated root tasks of the job.
-  repeated TaskSubmission root_tasks_overrides = 2;
+  repeated TaskSubmission root_tasks_overrides = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 64
+  }];
   // The name of the job.
-  string job_name = 3;
+  string job_name = 3 [(buf.validate.field).string.min_bytes = 1];
 }
 
 // A service for interacting with jobs.
