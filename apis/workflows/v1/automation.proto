@@ -40,6 +40,10 @@ message AutomationPrototype {
 
   repeated StorageEventTrigger storage_event_triggers = 4; // The storage event triggers that will trigger the task
   repeated CronTrigger cron_triggers = 5; // The cron triggers that will trigger the task
+
+  bool disabled = 6; // Whether the automation is disabled (paused) or not.
+  // the field is named disabled rather than enabled (with the semantics flipped) to make sure not setting the field at
+  // all results in the automation being enabled by default.
 }
 
 // Automations is a list of automations
