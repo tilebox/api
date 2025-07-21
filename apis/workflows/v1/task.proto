@@ -4,6 +4,7 @@ edition = "2023";
 
 package workflows.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/duration.proto";
 import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
@@ -21,17 +22,21 @@ message NextTaskRequest {
 // NextTaskToRun is a message specifying the capabilities of the task runner, and therefore the potential
 // tasks that can be run by that task runner.
 message NextTaskToRun {
-  string cluster_slug = 1; // The cluster that this task runner is running on.
-  repeated TaskIdentifier identifiers = 2; // The task identifiers that this task runner can run.
+  // The cluster that this task runner is running on.
+  string cluster_slug = 1 [(buf.validate.field).string.min_bytes = 1];
+  // The task identifiers that this task runner can run.
+  repeated TaskIdentifier identifiers = 2;
 }
 
 // ComputedTask is a message specifying a task that has been computed by the task runner.
 message ComputedTask {
-  tilebox.v1.ID id = 1; // The id of the task that has been computed.
+  // The id of the task that has been computed.
+  tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
   // A display name for the task that has been computed for visualization purposes.
   // If not set, the display message specified upon task submission will be kept.
   string display = 2;
-  repeated TaskSubmission sub_tasks = 3; // A list of sub-tasks that the just computed task spawned.
+  // A list of sub-tasks that the just computed task spawned.
+  repeated TaskSubmission sub_tasks = 3 [(buf.validate.field).repeated.max_items = 64];
 }
 
 // NextTaskResponse is the response to the NextTask request.
@@ -42,7 +47,7 @@ message NextTaskResponse {
 
 // TaskFailedRequest is the request for marking a task as failed.
 message TaskFailedRequest {
-  tilebox.v1.ID task_id = 1;
+  tilebox.v1.ID task_id = 1 [(buf.validate.field).required = true];
   string display = 2;
   bool cancel_job = 3;
 }
@@ -55,7 +60,7 @@ message TaskStateResponse {
 
 // TaskLease is a message specifying the new lease expiration time of a task.
 message TaskLeaseRequest {
-  tilebox.v1.ID task_id = 1;
+  tilebox.v1.ID task_id = 1 [(buf.validate.field).required = true];
   google.protobuf.Duration requested_lease = 2 [features.field_presence = EXPLICIT];
 }
 

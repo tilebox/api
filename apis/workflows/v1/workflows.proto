@@ -4,6 +4,7 @@ edition = "2023";
 
 package workflows.v1;
 
+import "buf/validate/validate.proto";
 import "workflows/v1/core.proto";
 
 option features.field_presence = IMPLICIT;
@@ -11,7 +12,7 @@ option features.field_presence = IMPLICIT;
 // CreateClusterRequest creates a new cluster.
 message CreateClusterRequest {
   // The name of the cluster.
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.min_bytes = 1];
 }
 
 // GetClusterRequest requests details for a cluster.
@@ -23,7 +24,7 @@ message GetClusterRequest {
 // DeleteClusterRequest deletes an existing cluster.
 message DeleteClusterRequest {
   // The slug of the cluster to delete.
-  string cluster_slug = 1;
+  string cluster_slug = 1 [(buf.validate.field).string.min_bytes = 1];
 }
 
 // DeleteClusterResponse is the response to DeleteClusterRequest.

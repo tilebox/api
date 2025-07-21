@@ -2,9 +2,16 @@ edition = "2023";
 
 package tilebox.v1;
 
+import "buf/validate/validate.proto";
+
 option features.field_presence = IMPLICIT;
 
 // Bytes field (in message)
 message ID {
-  bytes uuid = 1;
+  bytes uuid = 1 [(buf.validate.field).bytes = {
+    len: 16
+    not_in: [
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" // Nil UUID
+    ]
+  }];
 }

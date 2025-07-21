@@ -4,19 +4,28 @@ edition = "2023";
 
 package workflows.v1;
 
+import "buf/validate/validate.proto";
+
 option features.field_presence = IMPLICIT;
 
 // Request to render a diagram
 message RenderDiagramRequest {
-  string diagram = 1; // The diagram graph in the D2 syntax
-  RenderOptions render_options = 2; // The options for rendering the diagram
+  // The diagram graph in the D2 syntax
+  string diagram = 1;
+  // The options for rendering the diagram
+  RenderOptions render_options = 2;
 }
 
 // Options for rendering the diagram
 message RenderOptions {
   // The layout to use for rendering the diagram: https://d2lang.com/tour/layouts/.
   // "dagre" or "elk". Defaults to "dagre"
-  string layout = 1;
+  string layout = 1 [(buf.validate.field).string = {
+    in: [
+      "dagre",
+      "elk"
+    ]
+  }];
 
   // The D2 theme to use when rendering the diagram: https://d2lang.com/tour/themes/
   int64 theme_id = 2 [features.field_presence = EXPLICIT];
@@ -28,8 +37,14 @@ message RenderOptions {
   int64 padding = 4;
 
   // Set explicitly the direction of the diagram: https://d2lang.com/tour/layouts/#direction.
-  // "up", "down", "right", "left".
-  string direction = 5;
+  string direction = 5 [(buf.validate.field).string = {
+    in: [
+      "up",
+      "down",
+      "right",
+      "left"
+    ]
+  }];
 }
 
 // A rendered diagram
