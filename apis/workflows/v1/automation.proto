@@ -89,7 +89,7 @@ message StorageEventTrigger {
   // The storage location to watch for events
   StorageLocation storage_location = 2;
   // A glob pattern to match objects/files in the storage location
-  string glob_pattern = 3 [(buf.validate.field).string.min_bytes = 1];
+  string glob_pattern = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 // CronTrigger is a trigger that will trigger a task submission on a schedule.
@@ -97,7 +97,7 @@ message CronTrigger {
   // Unique identifier for the trigger
   tilebox.v1.ID id = 1;
   // A cron schedule for the trigger, e.g. "0 0 * * *" (every day at midnight)
-  string schedule = 2 [(buf.validate.field).string.min_bytes = 1];
+  string schedule = 2 [(buf.validate.field).string.min_len = 1];
 }
 
 // Automation is an actual submitted task that was triggered by a automation prototype.

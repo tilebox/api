@@ -133,7 +133,7 @@ message TaskSubmission {
   // The serialized task instance
   bytes input = 3 [(buf.validate.field).bytes.max_len = 1024];
   // A human-readable description of the task
-  string display = 4 [(buf.validate.field).string.min_bytes = 1];
+  string display = 4 [(buf.validate.field).string.min_len = 1];
   // A list of indices, corresponding to tasks in the list of sub_tasks that this SubTask is part of.
   repeated int64 dependencies = 5 [(buf.validate.field).repeated.items.int64 = {
     gte: 0

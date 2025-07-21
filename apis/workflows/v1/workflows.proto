@@ -12,7 +12,7 @@ option features.field_presence = IMPLICIT;
 // CreateClusterRequest creates a new cluster.
 message CreateClusterRequest {
   // The name of the cluster.
-  string name = 1 [(buf.validate.field).string.min_bytes = 1];
+  string name = 1 [(buf.validate.field).string.min_len = 1];
 }
 
 // GetClusterRequest requests details for a cluster.
@@ -24,7 +24,7 @@ message GetClusterRequest {
 // DeleteClusterRequest deletes an existing cluster.
 message DeleteClusterRequest {
   // The slug of the cluster to delete.
-  string cluster_slug = 1 [(buf.validate.field).string.min_bytes = 1];
+  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
 }
 
 // DeleteClusterResponse is the response to DeleteClusterRequest.

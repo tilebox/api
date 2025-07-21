@@ -23,7 +23,7 @@ message NextTaskRequest {
 // tasks that can be run by that task runner.
 message NextTaskToRun {
   // The cluster that this task runner is running on.
-  string cluster_slug = 1 [(buf.validate.field).string.min_bytes = 1];
+  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
   // The task identifiers that this task runner can run.
   repeated TaskIdentifier identifiers = 2;
 }
@@ -61,7 +61,7 @@ message TaskStateResponse {
 // TaskLease is a message specifying the new lease expiration time of a task.
 message TaskLeaseRequest {
   tilebox.v1.ID task_id = 1 [(buf.validate.field).required = true];
-  google.protobuf.Duration requested_lease = 2 [features.field_presence = EXPLICIT];
+  google.protobuf.Duration requested_lease = 2;
 }
 
 // A service for task runners to communicate with the workflows service.
