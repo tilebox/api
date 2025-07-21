@@ -20,9 +20,9 @@ message SubmitJobRequest {
     max_items: 64
   }];
   // The name of the job.
-  string job_name = 2 [(buf.validate.field).string.min_bytes = 1];
+  string job_name = 2 [(buf.validate.field).string.min_len = 1];
   // Tracing information for the job. This is used to propagate tracing information to the workers that execute the job.
-  string trace_parent = 3 [(buf.validate.field).string.min_bytes = 1];
+  string trace_parent = 3 [(buf.validate.field).string.min_len = 1];
   // Optional. The ID of the automation that submits this job.
   tilebox.v1.ID automation_id = 4;
 }
@@ -82,12 +82,16 @@ message VisualizeJobRequest {
 
 // QueryFilters contains the filters to apply to a query.
 message QueryFilters {
-  // Either a time interval or ID interval must be set, but not both.
-  oneof temporal_extent {
-    option (buf.validate.oneof).required = true;
-    tilebox.v1.TimeInterval time_interval = 1;
-    tilebox.v1.IDInterval id_interval = 2;
-  }
+  option (buf.validate.message).oneof = {
+    fields: [
+      "time_interval",
+      "id_interval"
+    ]
+    required: true
+  };
+
+  tilebox.v1.TimeInterval time_interval = 1;
+  tilebox.v1.IDInterval id_interval = 2;
 
   // Filter jobs by automation id.
   tilebox.v1.ID automation_id = 3 [features.field_presence = EXPLICIT];
@@ -133,7 +137,7 @@ message CloneJobRequest {
     max_items: 64
   }];
   // The name of the job.
-  string job_name = 3 [(buf.validate.field).string.min_bytes = 1];
+  string job_name = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 // A service for interacting with jobs.
