@@ -4,6 +4,7 @@ edition = "2023";
 
 package datasets.v1;
 
+import "buf/validate/validate.proto";
 import "datasets/v1/core.proto";
 import "tilebox/v1/id.proto";
 
@@ -11,22 +12,30 @@ option features.field_presence = IMPLICIT;
 
 // CreateCollectionRequest is used to create a new collection.
 message CreateCollectionRequest {
-  tilebox.v1.ID dataset_id = 1; // The dataset id where the collection should be created.
-  string name = 2; // The name of the collection to create.
+  // The dataset id where the collection should be created.
+  tilebox.v1.ID dataset_id = 1 [(buf.validate.field).required = true];
+  // The name of the collection to create.
+  string name = 2 [(buf.validate.field).string.min_len = 1];
 }
 
 // GetCollectionByNameRequest contains the request parameters for retrieving a single collection by its name.
 message GetCollectionByNameRequest {
-  string collection_name = 1; // The name of the collection to retrieve.
-  bool with_availability = 2; // If true, the response will include the availability interval.
-  bool with_count = 3; // If true, the response will include the number of entries.
-  tilebox.v1.ID dataset_id = 4; // The dataset id.
+  // The name of the collection to retrieve.
+  string collection_name = 1 [(buf.validate.field).string.min_len = 1];
+  // If true, the response will include the availability interval.
+  bool with_availability = 2;
+  // If true, the response will include the number of entries.
+  bool with_count = 3;
+  // The dataset id.
+  tilebox.v1.ID dataset_id = 4 [(buf.validate.field).required = true];
 }
 
 // DeleteCollectionRequest contains the request parameters for deleting a single collection.
 message DeleteCollectionRequest {
-  tilebox.v1.ID collection_id = 1; // The id of the collection to delete.
-  tilebox.v1.ID dataset_id = 2; // The dataset id.
+  // The id of the collection to delete.
+  tilebox.v1.ID collection_id = 1 [(buf.validate.field).required = true];
+  // The dataset id.
+  tilebox.v1.ID dataset_id = 2 [(buf.validate.field).required = true];
 }
 
 // DeleteCollectionResponse is the response to DeleteCollectionRequest.
@@ -35,9 +44,12 @@ message DeleteCollectionResponse {}
 // ListCollectionsRequest contains the request parameters
 // for retrieving a list of all available collections for a given dataset.
 message ListCollectionsRequest {
-  tilebox.v1.ID dataset_id = 1; // The dataset id.
-  bool with_availability = 2; // If true, the response will include the availability interval.
-  bool with_count = 3; // If true, the response will include the number of entries.
+  // The dataset id.
+  tilebox.v1.ID dataset_id = 1 [(buf.validate.field).required = true];
+  // If true, the response will include the availability interval.
+  bool with_availability = 2;
+  // If true, the response will include the number of entries.
+  bool with_count = 3;
 }
 
 // CollectionService is the service definition for the Tilebox datasets service, which provides access to datasets

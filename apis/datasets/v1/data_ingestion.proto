@@ -4,32 +4,22 @@ edition = "2023";
 
 package datasets.v1;
 
-import "datasets/v1/core.proto";
+import "buf/validate/validate.proto";
 import "tilebox/v1/id.proto";
 
 option features.field_presence = IMPLICIT;
 
-// Legacy ingest request
-// IngestDatapointsRequest is used to ingest one or multiple datapoints into a collection.
-message IngestDatapointsRequest {
-  tilebox.v1.ID collection_id = 1; // The collection to insert the datapoints into.
-
-  Datapoints datapoints = 2;
-
-  // Whether to allow existing datapoints as part of the request. If true, datapoints that already exist will be
-  // ignored, and the number of such existing datapoints will be returned in the response. If false, any datapoints
-  // that already exist will result in an error. Setting this to true is useful for achieving idempotency (e.g.
-  // allowing re-ingestion of datapoints that have already been ingested in the past).
-  bool allow_existing = 3;
-}
-
 // IngestRequest is used to ingest one or multiple datapoints into a collection.
 message IngestRequest {
-  tilebox.v1.ID collection_id = 1; // The collection to insert the datapoints into.
+  // The collection to insert the datapoints into.
+  tilebox.v1.ID collection_id = 1 [(buf.validate.field).required = true];
 
   // The datapoints to insert. The values here are encoded protobuf messages. The type of the message is determined
   // by the type of the dataset that the specified collection belongs to.
-  repeated bytes values = 2;
+  repeated bytes values = 2 [
+    (buf.validate.field).repeated.max_items = 8192,
+    (buf.validate.field).repeated.items.bytes.min_len = 1
+  ];
 
   // Whether to allow existing datapoints as part of the request. If true, datapoints that already exist will be
   // ignored, and the number of such existing datapoints will be returned in the response. If false, any datapoints
@@ -41,20 +31,24 @@ message IngestRequest {
 // IngestResponse is the response to a IngestRequest, indicating the number of datapoints that were
 // ingested as well as the generated ids for those datapoints.
 message IngestResponse {
-  int64 num_created = 1; // The number of datapoints that were created.
-  int64 num_existing = 2; // The number of datapoints that were ignored because they already existed.
-  repeated tilebox.v1.ID datapoint_ids = 3; // The ids of the datapoints in the same order as the datapoints in the request.
+  // The number of datapoints that were created.
+  int64 num_created = 1;
+  // The number of datapoints that were ignored because they already existed.
+  int64 num_existing = 2;
+  // The ids of the datapoints in the same order as the datapoints in the request.
+  repeated tilebox.v1.ID datapoint_ids = 3;
 }
 
 // DeleteRequest is used to delete multiple datapoints from a collection.
 message DeleteRequest {
-  tilebox.v1.ID collection_id = 1;
-  repeated tilebox.v1.ID datapoint_ids = 2;
+  tilebox.v1.ID collection_id = 1 [(buf.validate.field).required = true];
+  repeated tilebox.v1.ID datapoint_ids = 2 [(buf.validate.field).repeated.max_items = 8192];
 }
 
 // DeleteResponse is used to indicate that multiple datapoints were deleted.
 message DeleteResponse {
-  int64 num_deleted = 1; // The number of datapoints that were deleted.
+  // The number of datapoints that were deleted.
+  int64 num_deleted = 1;
 }
 
 // DataIngestionService provides data ingestion and deletion capabilities for Tilebox datasets.

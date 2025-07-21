@@ -56,33 +56,36 @@ message RepeatedAny {
 // DatapointMetadata contains the metadata for a single data point.
 // legacy, only relevant for old endpoints
 message DatapointMetadata {
-  google.protobuf.Timestamp event_time = 1; // The time the message was received by the on-board computer.
-  google.protobuf.Timestamp ingestion_time = 2; // The time the message was ingested by Tilebox.
-  string id = 3 [features.field_presence = EXPLICIT]; // The external id of the datapoint.
-}
-
-// Datapoints is a list of datapoints in a Tilebox dataset, with all data points sharing the same type.
-message Datapoints {
-  repeated DatapointMetadata meta = 1; // A metadata for a datapoint.
-  RepeatedAny data = 2; // The datapoints.
+  // The time the message was received by the on-board computer.
+  google.protobuf.Timestamp event_time = 1;
+  // The time the message was ingested by Tilebox.
+  google.protobuf.Timestamp ingestion_time = 2;
+  // The external id of the datapoint.
+  string id = 3 [features.field_presence = EXPLICIT];
 }
 
 // DatapointPage is a single page of data points of a Tilebox dataset, such as it is returned by a ForInterval query
 message DatapointPage {
-  repeated DatapointMetadata meta = 1; // A metadata for a datapoint.
-  RepeatedAny data = 2; // The datapoints.
-  LegacyPagination next_page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for the next page.
+  // A metadata for a datapoint.
+  repeated DatapointMetadata meta = 1;
+  // The datapoints.
+  RepeatedAny data = 2;
+  // The pagination parameters for the next page.
+  LegacyPagination next_page = 3 [features.field_presence = EXPLICIT];
 }
 
 // Datapoint is a single datapoint in a Tilebox Dataset
 message Datapoint {
-  DatapointMetadata meta = 1; // A metadata for a datapoint.
-  Any data = 2; // The data.
+  // A metadata for a datapoint.
+  DatapointMetadata meta = 1;
+  // The data.
+  Any data = 2;
 }
 
 // Collection contains basic information about a dataset collection
 message Collection {
-  string legacy_id = 1; // Here for backwards compatibility, to be removed in the future.
+  // Here for backwards compatibility, to be removed in the future.
+  string legacy_id = 1;
   string name = 2;
   tilebox.v1.ID id = 3;
 }
@@ -90,8 +93,10 @@ message Collection {
 // CollectionInfo contains information about the data available in a dataset collection
 message CollectionInfo {
   Collection collection = 1;
-  tilebox.v1.TimeInterval availability = 2 [features.field_presence = EXPLICIT]; // The time interval for which data is available.
-  uint64 count = 3 [features.field_presence = EXPLICIT]; // Number of entries in the dataset.
+  // The time interval for which data is available.
+  tilebox.v1.TimeInterval availability = 2 [features.field_presence = EXPLICIT];
+  // Number of entries in the dataset.
+  uint64 count = 3 [features.field_presence = EXPLICIT];
 }
 
 // CollectionInfos contains a list of CollectionInfo messages.

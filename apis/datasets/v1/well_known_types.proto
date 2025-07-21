@@ -63,15 +63,19 @@ enum ObservationDirection {
 // The open data provider.
 enum OpendataProvider {
   OPENDATA_PROVIDER_UNSPECIFIED = 0;
-  OPENDATA_PROVIDER_ASF = 1; // Alaska Satellite Facility
-  OPENDATA_PROVIDER_COPERNICUS_DATASPACE = 2; // Copernicus Dataspace
-  OPENDATA_PROVIDER_UMBRA = 3; // Umbra Space
+  // Alaska Satellite Facility
+  OPENDATA_PROVIDER_ASF = 1;
+  // Copernicus Dataspace
+  OPENDATA_PROVIDER_COPERNICUS_DATASPACE = 2;
+  // Umbra Space
+  OPENDATA_PROVIDER_UMBRA = 3;
 }
 
 // https://www.earthdata.nasa.gov/engage/open-data-services-and-software/data-information-policy/data-levels
 enum ProcessingLevel {
   PROCESSING_LEVEL_UNSPECIFIED = 0;
-  PROCESSING_LEVEL_L0 = 12; // Raw data
+  // Raw data
+  PROCESSING_LEVEL_L0 = 12;
   PROCESSING_LEVEL_L1 = 10;
   PROCESSING_LEVEL_L1A = 1;
   PROCESSING_LEVEL_L1B = 2;
@@ -91,42 +95,65 @@ enum ProcessingLevel {
 
 // Polarization of the radar signal.
 enum Polarization {
-  // Horizontal transmit, Horizontal receive
   POLARIZATION_UNSPECIFIED = 0;
+  // Horizontal transmit, Horizontal receive
   POLARIZATION_HH = 1;
-  POLARIZATION_HV = 2; // Horizontal transmit, Vertical receive
-  POLARIZATION_VH = 3; // Vertical transmit, Horizontal receive
-  POLARIZATION_VV = 4; // Vertical transmit, Vertical receive
-  POLARIZATION_DUAL_HH = 5; // HH+HH
-  POLARIZATION_DUAL_HV = 6; // HV+HV
-  POLARIZATION_DUAL_VH = 7; // VH+VH
-  POLARIZATION_DUAL_VV = 8; // VV+VV
-  POLARIZATION_HH_HV = 9; // HH+HV
-  POLARIZATION_VV_VH = 10; // VV+VH
+  // Horizontal transmit, Vertical receive
+  POLARIZATION_HV = 2;
+  // Vertical transmit, Horizontal receive
+  POLARIZATION_VH = 3;
+  // Vertical transmit, Vertical receive
+  POLARIZATION_VV = 4;
+  // HH+HH
+  POLARIZATION_DUAL_HH = 5;
+  // HV+HV
+  POLARIZATION_DUAL_HV = 6;
+  // VH+VH
+  POLARIZATION_DUAL_VH = 7;
+  // VV+VV
+  POLARIZATION_DUAL_VV = 8;
+  // HH+HV
+  POLARIZATION_HH_HV = 9;
+  // VV+VH
+  POLARIZATION_VV_VH = 10;
 }
 
 // Sentinel-1 SAR (beam mode):
 // https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-1-sar/sar-instrument/acquisition-modes
 enum AcquisitionMode {
-  ACQUISITION_MODE_UNSPECIFIED = 0; // In case it is not set for a dataset
+  // In case it is not set for a dataset
+  ACQUISITION_MODE_UNSPECIFIED = 0;
   // used by Sentinel-1 SAR:
-  ACQUISITION_MODE_SM = 1; // Strip Map
-  ACQUISITION_MODE_EW = 2; // Extra Wide Swath
-  ACQUISITION_MODE_IW = 3; // Interferometric Wide Swath
-  ACQUISITION_MODE_WV = 4; // Wave
+  // Strip Map
+  ACQUISITION_MODE_SM = 1;
+  // Extra Wide Swath
+  ACQUISITION_MODE_EW = 2;
+  // Interferometric Wide Swath
+  ACQUISITION_MODE_IW = 3;
+  // Wave
+  ACQUISITION_MODE_WV = 4;
   // used by Umbra SAR:
-  ACQUISITION_MODE_SPOTLIGHT = 10; // Spotlight
+  // Spotlight
+  ACQUISITION_MODE_SPOTLIGHT = 10;
   // used by Sentinel 2 MSI:
-  ACQUISITION_MODE_NOBS = 20; // Nominal Observation
-  ACQUISITION_MODE_EOBS = 21; // Extended Observation
-  ACQUISITION_MODE_DASC = 22; // Dark Signal Calibration
-  ACQUISITION_MODE_ABSR = 23; // Absolute Radiometry Calibration
-  ACQUISITION_MODE_VIC = 24; // Vicarious Calibration
-  ACQUISITION_MODE_RAW = 25; // Raw Measurement
-  ACQUISITION_MODE_TST = 26; // Test Mode
+  // Nominal Observation
+  ACQUISITION_MODE_NOBS = 20;
+  // Extended Observation
+  ACQUISITION_MODE_EOBS = 21;
+  // Dark Signal Calibration
+  ACQUISITION_MODE_DASC = 22;
+  // Absolute Radiometry Calibration
+  ACQUISITION_MODE_ABSR = 23;
+  // Vicarious Calibration
+  ACQUISITION_MODE_VIC = 24;
+  // Raw Measurement
+  ACQUISITION_MODE_RAW = 25;
+  // Test Mode
+  ACQUISITION_MODE_TST = 26;
 }
 
 // Geometry is of a particular type, e.g. POINT, POLYGON, MULTIPOLYGON, encoded in a binary format
 message Geometry {
-  bytes wkb = 1; // well-known binary representation of a geometry
+  // well-known binary representation of a geometry
+  bytes wkb = 1;
 }

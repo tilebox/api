@@ -4,6 +4,7 @@ edition = "2023";
 
 package datasets.v1;
 
+import "buf/validate/validate.proto";
 import "datasets/v1/core.proto";
 import "datasets/v1/well_known_types.proto";
 import "tilebox/v1/id.proto";
@@ -14,14 +15,19 @@ option features.field_presence = IMPLICIT;
 // Legacy message, to be removed in the future.
 // GetDatasetForIntervalRequest contains the request parameters for retrieving data for a time interval.
 message GetDatasetForIntervalRequest {
-  string collection_id = 1; // The collection id.
+  // The collection id.
+  string collection_id = 1;
 
   // Either time interval or datapoint interval must be set, but not both.
-  tilebox.v1.TimeInterval time_interval = 2; // The time interval for which data is requested.
-  tilebox.v1.IDInterval datapoint_interval = 6; // The datapoint interval for which data is requested.
+  // The time interval for which data is requested.
+  tilebox.v1.TimeInterval time_interval = 2;
+  // The datapoint interval for which data is requested.
+  tilebox.v1.IDInterval datapoint_interval = 6;
 
-  LegacyPagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.
-  bool skip_data = 4; // If true, the datapoint data is not returned.
+  // The pagination parameters for this request.
+  LegacyPagination page = 3 [features.field_presence = EXPLICIT];
+  // If true, the datapoint data is not returned.
+  bool skip_data = 4;
   // If true, the datapoint metadata is not returned.
   // If both skip_data and skip_meta are true,
   // the response will only consist of a list of datapoint ids without any additional data or metadata.
@@ -31,64 +37,96 @@ message GetDatasetForIntervalRequest {
 // Legacy message, to be removed in the future.
 // GetDatapointByIdRequest contains the request parameters for retrieving a single data point in a collection by its id.
 message GetDatapointByIdRequest {
-  string collection_id = 1; // The collection id.
-  string id = 2; // The id of the requested data point.
-  bool skip_data = 3; // If true, only the datapoint metadata is returned.
+  // The collection id.
+  string collection_id = 1;
+  // The id of the requested data point.
+  string id = 2;
+  // If true, only the datapoint metadata is returned.
+  bool skip_data = 3;
 }
 
 // QueryByIDRequest contains the request parameters for retrieving a single data point by its id.
 message QueryByIDRequest {
-  repeated tilebox.v1.ID collection_ids = 1; // collection ids to query.
-  tilebox.v1.ID id = 2; // The id of the requested data point.
-  bool skip_data = 3; // If true, only the datapoint metadata is returned.
+  // collection ids to query.
+  repeated tilebox.v1.ID collection_ids = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+  // The id of the requested data point.
+  tilebox.v1.ID id = 2 [(buf.validate.field).required = true];
+  // If true, only the datapoint metadata is returned.
+  bool skip_data = 3;
 }
 
 // QueryFilters contains the filters to apply to a query.
 message QueryFilters {
-  // Either a time interval or datapoint interval must be set, but not both.
-  oneof temporal_extent {
-    tilebox.v1.TimeInterval time_interval = 1;
-    tilebox.v1.IDInterval datapoint_interval = 2;
-  }
+  option (buf.validate.message).oneof = {
+    fields: [
+      "time_interval",
+      "datapoint_interval"
+    ]
+    required: true
+  };
+
+  tilebox.v1.TimeInterval time_interval = 1;
+  tilebox.v1.IDInterval datapoint_interval = 2;
 
   SpatialFilter spatial_extent = 3;
 }
 
 // SpatialFilterMode specifies how geometries are compared to a given spatial filter.
 enum SpatialFilterMode {
-  SPATIAL_FILTER_MODE_UNSPECIFIED = 0; // Unspecified spatial filter mode, will default to intersects.
-  SPATIAL_FILTER_MODE_INTERSECTS = 1; // Any geometry that intersects the filter geometry is included.
-  SPATIAL_FILTER_MODE_CONTAINS = 2; // Only geometries fully contained within the filter geometry are included.
+  // Unspecified spatial filter mode, will default to intersects.
+  SPATIAL_FILTER_MODE_UNSPECIFIED = 0;
+  // Any geometry that intersects the filter geometry is included.
+  SPATIAL_FILTER_MODE_INTERSECTS = 1;
+  // Only geometries fully contained within the filter geometry are included.
+  SPATIAL_FILTER_MODE_CONTAINS = 2;
 }
 
 // SpatialCoordinateSystem specifies the coordinate system in which to perform geometry calculations such as
 // intersections.
 enum SpatialCoordinateSystem {
-  SPATIAL_COORDINATE_SYSTEM_UNSPECIFIED = 0; // Unspecified coordinate system, will default to cartesian.
-  SPATIAL_COORDINATE_SYSTEM_CARTESIAN = 1; // Cartesian (lat/lon) coordinate system
-  SPATIAL_COORDINATE_SYSTEM_SPHERICAL = 2; // Spherical (x/y/z) coordinate system
+  // Unspecified coordinate system, will default to cartesian.
+  SPATIAL_COORDINATE_SYSTEM_UNSPECIFIED = 0;
+  // Cartesian (lat/lon) coordinate system
+  SPATIAL_COORDINATE_SYSTEM_CARTESIAN = 1;
+  // Spherical (x/y/z) coordinate system
+  SPATIAL_COORDINATE_SYSTEM_SPHERICAL = 2;
 }
 
 // SpatialFilter defines a spatial filter operation as part of a query.
 message SpatialFilter {
-  Geometry geometry = 1; // The geometry to filter by.
-  SpatialFilterMode mode = 2; // Whether to filter by intersection or containment.
-  SpatialCoordinateSystem coordinate_system = 3; // Coordinate system in which to perform geometry calculations.
+  // The geometry to filter by.
+  Geometry geometry = 1 [(buf.validate.field).required = true];
+  // Whether to filter by intersection or containment.
+  SpatialFilterMode mode = 2 [(buf.validate.field).enum.defined_only = true];
+  // Coordinate system in which to perform geometry calculations.
+  SpatialCoordinateSystem coordinate_system = 3 [(buf.validate.field).enum.defined_only = true];
 }
 
 // QueryRequest contains the request parameters for retrieving data from a Tilebox dataset.
 message QueryRequest {
-  repeated tilebox.v1.ID collection_ids = 1; // collection ids to query.
-  QueryFilters filters = 2; // Filters to apply to the query.
+  // collection ids to query.
+  repeated tilebox.v1.ID collection_ids = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+  // Filters to apply to the query.
+  QueryFilters filters = 2;
 
-  tilebox.v1.Pagination page = 3 [features.field_presence = EXPLICIT]; // The pagination parameters for this request.
-  bool skip_data = 4; // If true, only datapoint metadata, such as id, time and ingestion_time are returned.
+  // The pagination parameters for this request.
+  tilebox.v1.Pagination page = 3 [features.field_presence = EXPLICIT];
+  // If true, only datapoint metadata, such as id, time and ingestion_time are returned.
+  bool skip_data = 4;
 }
 
 // QueryResultPage is a single page of data points of a Tilebox dataset
 message QueryResultPage {
-  RepeatedAny data = 1; // The datapoints.
-  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT]; // The pagination parameters for the next page.
+  // The datapoints.
+  RepeatedAny data = 1;
+  // The pagination parameters for the next page.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
 }
 
 // DataAccessService provides data access and querying capabilities for Tilebox datasets.

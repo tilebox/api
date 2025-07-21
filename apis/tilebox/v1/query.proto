@@ -2,6 +2,7 @@ edition = "2023";
 
 package tilebox.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 
@@ -42,7 +43,10 @@ message IDInterval {
 // Pagination information for paginated queries
 message Pagination {
   // The maximum number of entries to return.
-  int64 limit = 1 [features.field_presence = EXPLICIT];
+  int64 limit = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).int64.gte = 1
+  ];
   // Return entries starting after this entry.
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
   tilebox.v1.ID starting_after = 2 [features.field_presence = EXPLICIT];
