@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://www.schemastore.org/buf.gen.json
+version: v2
+plugins:
+  # protoc-gen-connect-openapi must be installed locally
+  # See https://github.com/sudorandom/protoc-gen-connect-openapi
+  - local: protoc-gen-connect-openapi
+    out: openapi
