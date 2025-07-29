@@ -22,7 +22,7 @@ message RenderOptions {
   // "dagre" or "elk". Defaults to "dagre"
   string layout = 1 [(buf.validate.field).string = {
     in: [
-      "",  // if not set, defaults to "dagre"
+      "", // if not set, defaults to "dagre"
       "dagre",
       "elk"
     ]
@@ -40,7 +40,7 @@ message RenderOptions {
   // Set explicitly the direction of the diagram: https://d2lang.com/tour/layouts/#direction.
   string direction = 5 [(buf.validate.field).string = {
     in: [
-      "",  // if not set, defaults to the d2 default, which is "down"
+      "", // if not set, defaults to the d2 default, which is "down"
       "up",
       "down",
       "right",
