@@ -156,6 +156,7 @@ message CloneJobRequest {
 service JobService {
   rpc SubmitJob(SubmitJobRequest) returns (Job);
   rpc GetJob(GetJobRequest) returns (Job);
+  rpc GetJobProgress(GetJobProgressRequest) returns (JobProgressResponse);
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
   rpc VisualizeJob(VisualizeJobRequest) returns (Diagram);
