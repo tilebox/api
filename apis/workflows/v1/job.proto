@@ -33,6 +33,18 @@ message GetJobRequest {
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
+// GetJobProgressRequest requests the status of a jobs progress bars.
+message GetJobProgressRequest {
+  // The ID of the job to get progress for.
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+}
+
+// JobProgressResponse is the response to a GetJobProgressRequest.
+message JobProgressResponse {
+  // The progress bars for a given job.
+  repeated ProgressBar progress_bars = 1;
+}
+
 // RetryJobRequest requests a retry of a job that has failed.
 message RetryJobRequest {
   // The job to retry.
