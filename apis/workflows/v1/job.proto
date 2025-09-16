@@ -33,16 +33,11 @@ message GetJobRequest {
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
-// GetJobProgressRequest requests the status of a jobs progress bars.
+// GetJobProgressRequest requests the status of a jobs progress bars. It returns a full job object, but only
+// partially filled with progress bars, job state and a started_at timestamp.
 message GetJobProgressRequest {
   // The ID of the job to get progress for.
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
-}
-
-// JobProgressResponse is the response to a GetJobProgressRequest.
-message JobProgressResponse {
-  // The progress bars for a given job.
-  repeated ProgressBar progress_bars = 1;
 }
 
 // RetryJobRequest requests a retry of a job that has failed.
@@ -156,7 +151,7 @@ message CloneJobRequest {
 service JobService {
   rpc SubmitJob(SubmitJobRequest) returns (Job);
   rpc GetJob(GetJobRequest) returns (Job);
-  rpc GetJobProgress(GetJobProgressRequest) returns (JobProgressResponse);
+  rpc GetJobProgress(GetJobProgressRequest) returns (Job);
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
   rpc VisualizeJob(VisualizeJobRequest) returns (Diagram);
