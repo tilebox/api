@@ -41,8 +41,8 @@ message Job {
   repeated TaskSummary task_summaries = 9;
   // The automation that submitted the job.
   tilebox.v1.ID automation_id = 10;
-  // A list of progress bars for the job.
-  repeated ProgressBar progress_bars = 11;
+  // A list of progress indicators for the job.
+  repeated Progress progress = 11;
 }
 
 // The state of a job.
@@ -67,9 +67,9 @@ message TaskSummary {
   google.protobuf.Timestamp stopped_at = 7;
 }
 
-// ProgressBar is an indication of progress for a workflow.
-message ProgressBar {
-  // A human-readable label displayed next to the progress bar. Can also be empty.
+// Progress is an indicator of total and completed work units for a job.
+message Progress {
+  // A human-readable label for the progress indicator. Can also be empty.
   string label = 1 [(buf.validate.field).string.max_len = 100];
   // The total number of work units to be processed.
   uint64 total = 2;
