@@ -33,8 +33,8 @@ message GetJobRequest {
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
-// GetJobProgressRequest requests the status of a jobs progress bars. It returns a full job object, but only
-// partially filled with progress bars, job state and a started_at timestamp.
+// GetJobProgressRequest requests a jobs progress. It returns a full job object, but only
+// partially filled with progress indicators, job state and a started_at timestamp.
 message GetJobProgressRequest {
   // The ID of the job to get progress for.
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];

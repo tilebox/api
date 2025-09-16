@@ -37,8 +37,8 @@ message ComputedTask {
   string display = 2;
   // A list of sub-tasks that the just computed task spawned.
   repeated TaskSubmission sub_tasks = 3 [(buf.validate.field).repeated.max_items = 64];
-  // A list of progress bar updates that the computed task wants to report.
-  repeated ProgressBar progress_updates = 4;
+  // A list of progress updates that the computed task wants to report.
+  repeated Progress progress_updates = 4;
 }
 
 // IdlingResponse is set in the response of a NextTaskRequest if no task was returned, indicating that the requesting
@@ -72,11 +72,11 @@ message TaskFailedRequest {
   string display = 2;
   // Whether to cancel the job that the task belongs to.
   bool cancel_job = 3;
-  // A list of progress bar updates that the failed task wants to report. Even if a task fails, it could
+  // A list of progress updates that the failed task wants to report. Even if a task fails, it could
   // still have made some progress before failing, and we want to reflect that progress.
   // Since progress updates are idempotent, retrying the task and getting the same progress update again
   // is not an issue.
-  repeated ProgressBar progress_updates = 4;
+  repeated Progress progress_updates = 4;
 }
 
 // TaskStateResponse is the response to the TaskFailed request,
