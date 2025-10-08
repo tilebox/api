@@ -100,8 +100,13 @@ message QueryFilters {
   tilebox.v1.TimeInterval time_interval = 1;
   tilebox.v1.IDInterval id_interval = 2;
 
-  // Filter jobs by automation id.
-  tilebox.v1.ID automation_id = 3 [features.field_presence = EXPLICIT];
+  // Filter jobs by automations.
+  repeated tilebox.v1.ID automation_ids = 3;
+
+  // Filter jobs by states.
+  repeated JobState states = 4;
+
+  string name = 5 [(buf.validate.field).string.max_len = 100];
 }
 
 // QueryJobsRequest requests a list of jobs.
