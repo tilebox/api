@@ -130,6 +130,8 @@ message Dataset {
   string slug = 12;
   // true if the dataset type is editable
   bool type_editable = 13;
+  // list of collections in the dataset
+  repeated CollectionInfo collections = 14;
 }
 
 // DatasetPermission is a permission a user (as part of an org) can have on a dataset
