@@ -182,12 +182,18 @@ message Tasks {
 
 // TaskSubmission is a message of a task that is just about to be submitted, either by submitting a job or as a subtask.
 message TaskSubmission {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "input",
+      "inputs"
+    ]
+    required: true
+  };
+
   // The cluster that this task should be run on
   string cluster_slug = 1;
   // The task identifier
   TaskIdentifier identifier = 2;
-  // The serialized task instance
-  bytes input = 3 [(buf.validate.field).bytes.max_len = 1024];
   // A human-readable description of the task
   string display = 4 [(buf.validate.field).string.min_len = 1];
   // A list of indices, corresponding to tasks in the list of sub_tasks that this SubTask is part of.
@@ -197,6 +203,18 @@ message TaskSubmission {
   }];
   // The maximum number of retries for this task.
   int64 max_retries = 6 [(buf.validate.field).int64.gte = 0];
+
+  // The serialized task instance, if there is only a single instance.
+  bytes input = 3 [(buf.validate.field).bytes.max_len = 2048];
+
+  // A list of serialized task instances, all sharing the same task properties. This is useful for cases where we have
+  // a larger number of very similar subtasks, but only the input parameters vary.
+  repeated bytes inputs = 7 [(buf.validate.field).repeated = {
+    items: {
+      bytes: {max_len: 2048}
+    }
+    max_items: 100000 // maximum of 100k subtasks in a single subtask tree
+  }];
 }
 
 // A lease for a task.
