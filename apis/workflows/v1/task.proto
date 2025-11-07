@@ -36,7 +36,12 @@ message ComputedTask {
   // If not set, the display message specified upon task submission will be kept.
   string display = 2;
   // A list of sub-tasks that the just computed task spawned.
-  repeated TaskSubmission sub_tasks = 3 [(buf.validate.field).repeated.max_items = 64];
+  repeated TaskSubmission legacy_sub_tasks = 3 [
+    deprecated = true,
+    (buf.validate.field).repeated.max_items = 64
+  ];
+  // A list of sub-tasks that the just computed task spawned.
+  TaskSubmissions sub_tasks = 5;
   // A list of progress updates that the computed task wants to report.
   repeated Progress progress_updates = 4;
 }
