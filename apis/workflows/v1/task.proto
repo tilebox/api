@@ -36,7 +36,7 @@ message ComputedTask {
   // If not set, the display message specified upon task submission will be kept.
   string display = 2;
   // A list of sub-tasks that the just computed task spawned.
-  repeated TaskSubmission legacy_sub_tasks = 3 [
+  repeated SingleTaskSubmission legacy_sub_tasks = 3 [
     deprecated = true,
     (buf.validate.field).repeated.max_items = 64
   ];

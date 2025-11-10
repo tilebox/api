@@ -63,7 +63,7 @@ message AutomationPrototype {
     max_bytes: 1024
   }];
   // The task submission to trigger
-  TaskSubmission prototype = 3;
+  SingleTaskSubmission prototype = 3;
 
   // The storage event triggers that will trigger the task
   repeated StorageEventTrigger storage_event_triggers = 4 [(buf.validate.field).repeated.max_items = 32];

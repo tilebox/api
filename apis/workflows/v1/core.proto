@@ -180,8 +180,8 @@ message Tasks {
   repeated Task tasks = 1;
 }
 
-// TaskSubmission is a message of a task that is just about to be submitted, either by submitting a job or as a subtask.
-message TaskSubmission {
+// SingleTaskSubmission is a message of a task that is just about to be submitted, currently in use by automations.
+message SingleTaskSubmission {
   // The cluster that this task should be run on
   string cluster_slug = 1;
   // The task identifier
@@ -209,7 +209,10 @@ message TaskSubmissions {
   // Concrete instantiations of tasks, grouped by their dependencies and dependants. Each group is uniquely defined by
   // the set of groups that it depends on (dependencies_on_other_groups) and the set of groups that depend on it,
   // (which is implicitly given by the inverse of the dependencies on other groups).
-  repeated TaskSubmissionGroup task_groups = 1;
+  repeated TaskSubmissionGroup task_groups = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 64
+  }];
   // Unique values of cluster slugs, referenced by index in the task instantiations.
   repeated string cluster_slug_lookup = 2;
   // Unique values of task identifiers, referenced by index in the task instantiations.
