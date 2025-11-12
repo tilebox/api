@@ -255,7 +255,12 @@ message TaskSubmissionGroup {
   // The input parameters for each task.
   // We explicitly don't group the fields into a submessage and then have a single repeated field for that submessage,
   // to enable packed encoding of the repeated fields.
-  repeated bytes inputs = 2 [(buf.validate.field).repeated.items.bytes.max_len = 2048];
+  repeated bytes inputs = 2 [(buf.validate.field).repeated = {
+    min_items: 1 // we don't allow empty submission groups
+    items: {
+      bytes: {max_len: 2048}
+    }
+  }];
   // Index of the task identifier in the identifier_lookup field of the containing TaskSubmissions message
   // for each task.
   repeated uint64 identifier_pointers = 3;

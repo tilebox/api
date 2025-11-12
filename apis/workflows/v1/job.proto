@@ -14,6 +14,12 @@ option features.field_presence = IMPLICIT;
 
 // SubmitJobRequest submits and schedules a job for execution. The job can have multiple root tasks.
 message SubmitJobRequest {
+  option (buf.validate.message).cel = {
+    id: "submit_job_request.tasks_required"
+    message: "At least one task must be submitted."
+    expression: "(this.tasks != null && this.tasks.task_groups.size() > 0) || this.legacy_tasks.size() > 0"
+  };
+
   // The root tasks for the job.
   TaskSubmissions tasks = 5;
   // The name of the job.
