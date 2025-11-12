@@ -15,11 +15,6 @@ option features.field_presence = IMPLICIT;
 // SubmitJobRequest submits and schedules a job for execution. The job can have multiple root tasks.
 message SubmitJobRequest {
   // The root tasks for the job.
-  repeated SingleTaskSubmission legacy_tasks = 1 [(buf.validate.field).repeated = {
-    min_items: 1
-    max_items: 64
-  }];
-  // The root tasks for the job.
   TaskSubmissions tasks = 5;
   // The name of the job.
   string job_name = 2 [(buf.validate.field).string.min_len = 1];
@@ -27,6 +22,15 @@ message SubmitJobRequest {
   string trace_parent = 3 [(buf.validate.field).string.min_len = 1];
   // Optional. The ID of the automation that submits this job.
   tilebox.v1.ID automation_id = 4;
+
+  // The root tasks for the job. This field is deprecated and will be removed in the future. Kept around for backwards
+  // compatibility.
+  repeated SingleTaskSubmission legacy_tasks = 1 [
+    deprecated = true,
+    // we support more than that due to grouping and tree spawning, but we rather want to encourage users
+    // to update their clients to use the new field which has way less serialization overhead.
+    (buf.validate.field).repeated.max_items = 1000
+  ];
 }
 
 // GetJobRequest requests details for a job.
