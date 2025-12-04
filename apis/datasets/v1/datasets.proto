@@ -18,7 +18,7 @@ message CreateDatasetRequest {
   // message type of the dataset to create.
   DatasetType type = 2 [(buf.validate.field).required = true];
   // short text summary of the dataset to create.
-  string summary = 3 [(buf.validate.field).string.min_len = 1];
+  string summary = 3;
   // normalized snake case name of the dataset to create.
   string code_name = 4 [(buf.validate.field).string.min_len = 1];
 }
