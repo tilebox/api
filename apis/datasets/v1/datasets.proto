@@ -35,7 +35,7 @@ message GetDatasetRequest {
 
   // slug of the dataset to be returned, e.g. "open_data.copernicus.sentinel1_sar"
   // it must contain at least one group and one dataset code name separated by a "."
-  string slug = 1 [(buf.validate.field).string.pattern = "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"];
+  string slug = 1 [(buf.validate.field).string.pattern = "^[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)*$"];
   // or alternatively a dataset id
   tilebox.v1.ID id = 2;
 }
