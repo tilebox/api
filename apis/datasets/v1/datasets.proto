@@ -49,7 +49,7 @@ message UpdateDatasetRequest {
   // updated type of the dataset.
   DatasetType type = 3 [(buf.validate.field).required = true];
   // updated summary of the dataset.
-  string summary = 4 [(buf.validate.field).string.min_len = 1];
+  string summary = 4 [features.field_presence = EXPLICIT];
 }
 
 // ClientInfo contains information about the client requesting datasets, useful for us to gather usage data
