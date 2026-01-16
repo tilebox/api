@@ -99,11 +99,6 @@ message CollectionInfo {
   uint64 count = 3 [features.field_presence = EXPLICIT];
 }
 
-// CollectionInfos contains a list of CollectionInfo messages.
-message CollectionInfos {
-  repeated CollectionInfo data = 1;
-}
-
 // Dataset contains information about a single dataset
 message Dataset {
   // dataset id

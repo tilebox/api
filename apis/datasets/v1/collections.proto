@@ -52,10 +52,23 @@ message ListCollectionsRequest {
   bool with_count = 3;
 }
 
+// ListCollectionsResponse is the response to ListCollectionsRequest.
+// It contains a list of collections for the requested dataset, as well as
+// some organization level metadata about the number of collections the organization owns
+// and the maximum number of collections it can own.
+message ListCollectionsResponse {
+  // List of collections in the dataset.
+  repeated CollectionInfo data = 1;
+  // Number of collections in all datasets that the users organization is the owner of
+  int64 owned_collections = 2;
+  // Maximum number of collections that can be created and therefore owned by the organization. Nil means unlimited.
+  int64 maximum_owned_collections = 3 [features.field_presence = EXPLICIT];
+}
+
 // CollectionService is the service definition for the Tilebox datasets service, which provides access to datasets
 service CollectionService {
   rpc CreateCollection(CreateCollectionRequest) returns (CollectionInfo) {}
   rpc GetCollectionByName(GetCollectionByNameRequest) returns (CollectionInfo) {}
   rpc DeleteCollection(DeleteCollectionRequest) returns (DeleteCollectionResponse) {}
-  rpc ListCollections(ListCollectionsRequest) returns (CollectionInfos) {}
+  rpc ListCollections(ListCollectionsRequest) returns (ListCollectionsResponse) {}
 }
