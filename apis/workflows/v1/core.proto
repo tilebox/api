@@ -251,7 +251,7 @@ message TaskSubmissionGroup {
   option (buf.validate.message).cel = {
     id: "task_submission_group.optional_size_match"
     message: "The number of optional values must match the number of inputs."
-    expression: "this.inputs.size() == this.optional.size()"
+    expression: "this.inputs.size() == this.optional_values.size()"
   };
 
   // The indices of the groups that this submission group depends on. Indices refer to the groups field of the
@@ -278,7 +278,7 @@ message TaskSubmissionGroup {
   // The maximum number of retries for each task. Not a pointer to a lookup table, since we just inline the values.
   repeated int64 max_retries_values = 6;
   // Flag indicating whether each task is optional. Not a pointer to a lookup table, since we just inline the values.
-  repeated bool optional = 7;
+  repeated bool optional_values = 7;
 }
 
 // A lease for a task.
