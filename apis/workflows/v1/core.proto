@@ -251,7 +251,8 @@ message TaskSubmissionGroup {
   option (buf.validate.message).cel = {
     id: "task_submission_group.optional_size_match"
     message: "The number of optional values must match the number of inputs."
-    expression: "this.inputs.size() == this.optional_values.size()"
+    // we allow an empty list as well, in which case we default to all false, important for backwards compatibility
+    expression: "this.optional_values.size() == 0 || this.inputs.size() == this.optional_values.size()"
   };
 
   // The indices of the groups that this submission group depends on. Indices refer to the groups field of the
