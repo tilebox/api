@@ -159,6 +159,9 @@ enum TaskState {
   TASK_STATE_COMPUTED = 3;
   // The task has failed.
   TASK_STATE_FAILED = 4;
+  // The task has been skipped, because it was in an optional subbranch and one of its sibling tasks in the same
+  // branch has failed.
+  TASK_STATE_SKIPPED = 5;
 }
 
 // An identifier for a task.
