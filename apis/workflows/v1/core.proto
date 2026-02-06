@@ -14,7 +14,7 @@ option features.field_presence = IMPLICIT;
 // A cluster is a grouping of tasks that are related.
 message Cluster {
   // 1 is reserved for a potential id field in the future.
-
+  reserved 1;
   // The unique slug of the cluster within the namespace.
   string slug = 2;
   // The display name of the cluster.
@@ -162,6 +162,8 @@ enum TaskState {
   // The task has been skipped, because it was in an optional subbranch and one of its sibling tasks in the same
   // branch has failed.
   TASK_STATE_SKIPPED = 5;
+  // The task has failed, but was optional.
+  TASK_STATE_FAILED_OPTIONAL = 6;
 }
 
 // An identifier for a task.
