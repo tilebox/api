@@ -118,7 +118,11 @@ message QueryFilters {
   // Filter jobs by states.
   repeated JobState states = 4;
 
+  // Filter jobs by name.
   string name = 5 [(buf.validate.field).string.max_len = 100];
+
+  // Filter jobs by their tasks (whether they have tasks in a certain state).
+  repeated TaskState task_states = 6;
 }
 
 // QueryJobsRequest requests a list of jobs.
