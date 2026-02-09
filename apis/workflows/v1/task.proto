@@ -79,8 +79,10 @@ message TaskFailedRequest {
   tilebox.v1.ID task_id = 1 [(buf.validate.field).required = true];
   // A display name for the task that has failed for visualization purposes.
   string display = 2;
-  // Whether to cancel the job that the task belongs to.
-  bool cancel_job = 3;
+  // Whether the failure was caused by the workflow itself, as opposed to a failure in the task runner
+  // (e.g. a requested runner shutdown). If the task failure was not a workflow error, it won't be marked as failed,
+  // but will instead be QUEUED again. Since the task didn't actually fail, this does not count as a retry.
+  bool was_workflow_error = 3;
   // A list of progress updates that the failed task wants to report. Even if a task fails, it could
   // still have made some progress before failing, and we want to reflect that progress.
   // Since progress updates are idempotent, retrying the task and getting the same progress update again
