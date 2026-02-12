@@ -14,13 +14,28 @@ option features.field_presence = IMPLICIT;
 // CreateDatasetRequest is used to create a new dataset.
 message CreateDatasetRequest {
   // name of the dataset to create.
-  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
   // message type of the dataset to create.
   DatasetType type = 2 [(buf.validate.field).required = true];
   // short text summary of the dataset to create.
-  string summary = 3;
+  string summary = 3 [
+    (buf.validate.field).string.max_len = 50000
+  ];
   // normalized snake case name of the dataset to create.
-  string code_name = 4 [(buf.validate.field).string.min_len = 1];
+  string code_name = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$"
+  ];
+  // optional description of the dataset, in markdown format
+  string description = 5 [
+    (buf.validate.field).string.max_len = 1000000
+  ];
 }
 
 // GetDatasetRequest is the request message for the GetDataset RPC method for fetching a single dataset
@@ -40,16 +55,36 @@ message GetDatasetRequest {
   tilebox.v1.ID id = 2;
 }
 
-// UpdateDatasetRequest is used to update a dataset.
+// UpdateDatasetRequest updates a dataset, by updating all fields that are set to their new values.
+// If a field is not set, it will not be updated.
 message UpdateDatasetRequest {
   // id of the dataset to update.
   tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
   // updated name of the dataset.
-  string name = 2 [(buf.validate.field).string.min_len = 1];
+  string name = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
   // updated type of the dataset.
-  DatasetType type = 3 [(buf.validate.field).required = true];
+  DatasetType type = 3 [features.field_presence = EXPLICIT];
   // updated summary of the dataset.
-  string summary = 4 [features.field_presence = EXPLICIT];
+  string summary = 4 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.max_len = 50000
+  ];
+  // updated code name of the dataset.
+  string code_name = 5 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$"
+  ];
+  // updated description of the dataset, in markdown format
+  string description = 6 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.max_len = 1000000
+  ];
 }
 
 // ClientInfo contains information about the client requesting datasets, useful for us to gather usage data
@@ -68,14 +103,6 @@ message Package {
   string name = 1;
   // package version
   string version = 2;
-}
-
-// UpdateDatasetDescriptionRequest is used to update a dataset description
-message UpdateDatasetDescriptionRequest {
-  // dataset id
-  tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
-  // description of the dataset, in markdown format
-  string description = 2;
 }
 
 // DeleteDatasetRequest is used to delete a dataset
@@ -116,7 +143,6 @@ service DatasetService {
   rpc CreateDataset(CreateDatasetRequest) returns (Dataset) {}
   rpc GetDataset(GetDatasetRequest) returns (Dataset) {}
   rpc UpdateDataset(UpdateDatasetRequest) returns (Dataset) {}
-  rpc UpdateDatasetDescription(UpdateDatasetDescriptionRequest) returns (Dataset) {}
   rpc DeleteDataset(DeleteDatasetRequest) returns (DeleteDatasetResponse) {}
   rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse) {}
 }
