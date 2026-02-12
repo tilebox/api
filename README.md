@@ -29,10 +29,10 @@ Protocol Buffers used by [Tilebox](https://tilebox.com), a lightweight space dat
 
 ### Pre-commit hooks
 
-We use [pre-commit](https://pre-commit.com/) to run linters before committing. Run the following command once to install the hooks:
+We use [prek](https://prek.j178.dev/) to run linters before committing. Run the following command once to install the hooks:
 
 ```bash
-pre-commit install
+uvx prek install
 ````
 
 ### Updating buf dependencies
