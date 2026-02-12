@@ -22,9 +22,7 @@ message CreateDatasetRequest {
   // message type of the dataset to create.
   DatasetType type = 2 [(buf.validate.field).required = true];
   // short text summary of the dataset to create.
-  string summary = 3 [
-    (buf.validate.field).string.max_len = 50000
-  ];
+  string summary = 3 [(buf.validate.field).string.max_len = 50000];
   // normalized snake case name of the dataset to create.
   string code_name = 4 [
     (buf.validate.field).required = true,
@@ -33,9 +31,7 @@ message CreateDatasetRequest {
     (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$"
   ];
   // optional description of the dataset, in markdown format
-  string description = 5 [
-    (buf.validate.field).string.max_len = 1000000
-  ];
+  string description = 5 [(buf.validate.field).string.max_len = 1000000];
 }
 
 // GetDatasetRequest is the request message for the GetDataset RPC method for fetching a single dataset
