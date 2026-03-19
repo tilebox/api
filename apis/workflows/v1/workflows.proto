@@ -5,7 +5,6 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
-import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
 option features.field_presence = IMPLICIT;
@@ -40,97 +39,10 @@ message ListClustersResponse {
   repeated Cluster clusters = 1;
 }
 
-// PublishReleaseRequest publishes immutable release metadata for a release task set.
-message PublishReleaseRequest {
-  // Task identifiers included in this release.
-  repeated TaskIdentifier tasks = 1 [(buf.validate.field).repeated.min_items = 1];
-  // URI pointing to the release artifact.
-  string artifact_uri = 2 [(buf.validate.field).string.min_len = 1];
-  // Canonical artifact digest in format sha256:<hex>.
-  string artifact_digest = 3 [(buf.validate.field).string.pattern = "^sha256:[a-f0-9]{64}$"];
-  // Runtime kind for this release, currently python_uv in phase 1.
-  string runtime_kind = 4 [(buf.validate.field).string.min_len = 1];
-  // Canonical environment digest in format sha256:<hex>.
-  string environment_digest = 5 [(buf.validate.field).string.pattern = "^sha256:[a-f0-9]{64}$"];
-  // Optional UTF-8 JSON metadata payload.
-  bytes metadata_json = 6 [features.field_presence = EXPLICIT];
-}
-
-// PublishReleaseResponse is the publish API response.
-message PublishReleaseResponse {
-  // Immutable release id.
-  tilebox.v1.ID release_id = 1;
-  // True when this call created a new release row.
-  bool created = 2;
-  // True when this call matched an existing immutable payload exactly.
-  bool idempotent = 3;
-}
-
-// DeployReleaseRequest updates the cluster deployment pointer for a release.
-message DeployReleaseRequest {
-  // Target cluster slug.
-  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
-  // Immutable release id.
-  tilebox.v1.ID release_id = 2 [(buf.validate.field).required = true];
-}
-
-// DeployReleaseResponse is the deploy API response.
-message DeployReleaseResponse {
-  // Target cluster slug.
-  string cluster_slug = 1;
-  // Deployed release id.
-  tilebox.v1.ID release_id = 2;
-  // Latest cluster manifest revision after the request.
-  uint64 manifest_revision = 3;
-  // Whether this request changed the deployment pointer.
-  bool changed = 4;
-}
-
-// GetClusterDeploymentManifestRequest requests the active desired state for a cluster.
-message GetClusterDeploymentManifestRequest {
-  // Target cluster slug.
-  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
-  // Optional revision cursor. 0 requests a full snapshot.
-  uint64 since_revision = 2;
-}
-
-// DeployedRelease describes the currently deployed release in the manifest response.
-message DeployedRelease {
-  // Immutable release id.
-  tilebox.v1.ID release_id = 1;
-  // URI pointing to the release artifact.
-  string artifact_uri = 2;
-  // Canonical artifact digest.
-  string artifact_digest = 3;
-  // Runtime kind.
-  string runtime_kind = 4;
-  // Canonical environment digest.
-  string environment_digest = 5;
-  // Optional UTF-8 JSON metadata payload.
-  bytes metadata_json = 6 [features.field_presence = EXPLICIT];
-  // Deployment revision at which this release pointer changed.
-  uint64 change_revision = 7;
-  // Task identifiers included in the deployed release.
-  repeated TaskIdentifier tasks = 8;
-}
-
-// GetClusterDeploymentManifestResponse returns desired deployment state for a cluster.
-message GetClusterDeploymentManifestResponse {
-  // Target cluster slug.
-  string cluster_slug = 1;
-  // Latest cluster manifest revision.
-  uint64 manifest_revision = 2;
-  // Active deployed release. Empty when nothing is deployed or when unchanged since since_revision.
-  DeployedRelease release = 3;
-}
-
 // A service for managing workflows.
 service WorkflowsService {
   rpc CreateCluster(CreateClusterRequest) returns (Cluster);
   rpc GetCluster(GetClusterRequest) returns (Cluster);
   rpc DeleteCluster(DeleteClusterRequest) returns (DeleteClusterResponse);
   rpc ListClusters(ListClustersRequest) returns (ListClustersResponse);
-  rpc PublishRelease(PublishReleaseRequest) returns (PublishReleaseResponse);
-  rpc DeployRelease(DeployReleaseRequest) returns (DeployReleaseResponse);
-  rpc GetClusterDeploymentManifest(GetClusterDeploymentManifestRequest) returns (GetClusterDeploymentManifestResponse);
 }
