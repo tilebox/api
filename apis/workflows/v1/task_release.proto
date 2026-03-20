@@ -5,6 +5,7 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
@@ -32,8 +33,20 @@ message PublishReleaseResponse {
   tilebox.v1.ID release_id = 1;
   // True when this call created a new release row.
   bool created = 2;
-  // True when this call matched an existing immutable payload exactly.
-  bool idempotent = 3;
+  // Explicit payload changes compared to the latest comparable release.
+  PublishReleaseChanges changes = 4;
+  reserved idempotent;
+  reserved 3;
+}
+
+// PublishReleaseChanges captures which release surfaces changed.
+message PublishReleaseChanges {
+  // True when the task set (including versions) changed.
+  bool tasks = 1;
+  // True when the artifact content changed.
+  bool artifact = 2;
+  // True when the runtime environment changed.
+  bool environment = 3;
 }
 
 // DeployReleaseRequest updates the cluster deployment pointer for a release.
@@ -82,6 +95,8 @@ message DeployedRelease {
   uint64 change_revision = 7;
   // Task identifiers included in the deployed release.
   repeated TaskIdentifier tasks = 8;
+  // Timestamp when this release pointer was deployed.
+  google.protobuf.Timestamp deployed_at = 9;
 }
 
 // GetClusterDeploymentManifestResponse returns desired deployment state for a cluster.
