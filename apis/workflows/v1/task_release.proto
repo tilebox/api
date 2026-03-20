@@ -35,6 +35,7 @@ message PublishReleaseResponse {
   bool created = 2;
   // Explicit payload changes compared to the latest comparable release.
   PublishReleaseChanges changes = 4;
+  reserved idempotent;
   reserved 3;
 }
 
