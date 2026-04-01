@@ -12,39 +12,6 @@ import "tilebox/v1/query.proto";
 
 option features.field_presence = IMPLICIT;
 
-// Legacy message, to be removed in the future.
-// GetDatasetForIntervalRequest contains the request parameters for retrieving data for a time interval.
-message GetDatasetForIntervalRequest {
-  // The collection id.
-  string collection_id = 1;
-
-  // Either time interval or datapoint interval must be set, but not both.
-  // The time interval for which data is requested.
-  tilebox.v1.TimeInterval time_interval = 2;
-  // The datapoint interval for which data is requested.
-  tilebox.v1.IDInterval datapoint_interval = 6;
-
-  // The pagination parameters for this request.
-  LegacyPagination page = 3 [features.field_presence = EXPLICIT];
-  // If true, the datapoint data is not returned.
-  bool skip_data = 4;
-  // If true, the datapoint metadata is not returned.
-  // If both skip_data and skip_meta are true,
-  // the response will only consist of a list of datapoint ids without any additional data or metadata.
-  bool skip_meta = 5;
-}
-
-// Legacy message, to be removed in the future.
-// GetDatapointByIdRequest contains the request parameters for retrieving a single data point in a collection by its id.
-message GetDatapointByIdRequest {
-  // The collection id.
-  string collection_id = 1;
-  // The id of the requested data point.
-  string id = 2;
-  // If true, only the datapoint metadata is returned.
-  bool skip_data = 3;
-}
-
 // QueryByIDRequest contains the request parameters for retrieving a single data point by its id.
 message QueryByIDRequest {
   // The dataset id to query. If not set, the dataset is derived from the collection ids, in which case there must be at least one collection id set.
@@ -135,11 +102,6 @@ message QueryResultPage {
 
 // DataAccessService provides data access and querying capabilities for Tilebox datasets.
 service DataAccessService {
-  // legacy endpoint, kept around for backwards compatibility with older python clients for now
-  rpc GetDatasetForInterval(GetDatasetForIntervalRequest) returns (DatapointPage) {}
-  // legacy endpoint, kept around for backwards compatibility with older python clients for now
-  rpc GetDatapointByID(GetDatapointByIdRequest) returns (Datapoint) {}
-
   // QueryByID returns a single data point by its ID.
   rpc QueryByID(QueryByIDRequest) returns (Any) {}
 
