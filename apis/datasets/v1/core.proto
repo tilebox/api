@@ -17,21 +17,10 @@ edition = "2023";
 package datasets.v1;
 
 import "datasets/v1/dataset_type.proto";
-// https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
-import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
 option features.field_presence = IMPLICIT;
-
-// LegacyPagination - used for backwards compatibility, will be removed as soon as all datasets are migrated
-message LegacyPagination {
-  // The maximum number of entries to return.
-  int64 limit = 1 [features.field_presence = EXPLICIT];
-  // Return entries starting after this entry.
-  // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
-  string starting_after = 2 [features.field_presence = EXPLICIT];
-}
 
 // Any is a message that can hold any other message as bytes.
 // We don't use google.protobuf.Any because we want the JSON representation of the value field to be bytes.
@@ -53,39 +42,9 @@ message RepeatedAny {
  * Messages relevant for all Tilebox datasets
  */
 
-// DatapointMetadata contains the metadata for a single data point.
-// legacy, only relevant for old endpoints
-message DatapointMetadata {
-  // The time the message was received by the on-board computer.
-  google.protobuf.Timestamp event_time = 1;
-  // The time the message was ingested by Tilebox.
-  google.protobuf.Timestamp ingestion_time = 2;
-  // The external id of the datapoint.
-  string id = 3 [features.field_presence = EXPLICIT];
-}
-
-// DatapointPage is a single page of data points of a Tilebox dataset, such as it is returned by a ForInterval query
-message DatapointPage {
-  // A metadata for a datapoint.
-  repeated DatapointMetadata meta = 1;
-  // The datapoints.
-  RepeatedAny data = 2;
-  // The pagination parameters for the next page.
-  LegacyPagination next_page = 3 [features.field_presence = EXPLICIT];
-}
-
-// Datapoint is a single datapoint in a Tilebox Dataset
-message Datapoint {
-  // A metadata for a datapoint.
-  DatapointMetadata meta = 1;
-  // The data.
-  Any data = 2;
-}
-
 // Collection contains basic information about a dataset collection
 message Collection {
-  // Here for backwards compatibility, to be removed in the future.
-  string legacy_id = 1;
+  reserved 1; // was a
   string name = 2;
   tilebox.v1.ID id = 3;
 }
