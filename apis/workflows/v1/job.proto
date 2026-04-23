@@ -106,9 +106,10 @@ message QueryFilters {
       "time_interval",
       "id_interval"
     ]
-    required: true
+    required: false
   };
 
+  // Filter by time (or UUIDs encoding a timestamp)
   tilebox.v1.TimeInterval time_interval = 1;
   tilebox.v1.IDInterval id_interval = 2;
 
