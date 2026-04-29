@@ -1,0 +1,58 @@
+edition = "2023";
+
+package workflows.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+import "opentelemetry/proto/logs/v1/logs.proto";
+import "opentelemetry/proto/trace/v1/trace.proto";
+import "tilebox/v1/id.proto";
+import "tilebox/v1/query.proto";
+
+// SortDirection specifies the direction in which to sort log entries when querying logs. It can be used in combination
+// with the cursor field in TelemetryPagination to paginate through log entries in either ascending or descending order.
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0;
+  // Sort in ascending order (oldest entries first).
+  SORT_DIRECTION_ASCENDING = 1;
+  // Sort in descending order (newest entries first).
+  SORT_DIRECTION_DESCENDING = 2;
+}
+
+// QueryJobLogsRequest is the request message for querying logs of a specific job, in ascending or descending order,
+// with pagination support.
+message QueryJobLogsRequest {
+  // The ID of the job to query logs for.
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+  // The pagination parameters for this request.
+  tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
+  // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
+  SortDirection sort_direction = 3;
+}
+
+// QueryLogsInIntervalRequest is the request message for querying logs in a specific time interval.
+// It can be used to query all log messages across multiple jobs, and can be filtered by other parameters in the future.
+message QueryLogsInIntervalRequest {
+  // The start time of the interval to query logs for.
+  tilebox.v1.TimeInterval time_interval = 1;
+  // The pagination parameters for this request.
+  tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
+  // The direction in which to sort log entries. If not specified, defaults to descending order (newest entries first).
+  SortDirection sort_direction = 3;
+}
+
+// PaginatedLogsData is the response message for paginated log queries. It's a message compatible with LogsData,
+// but with an additional field for pagination parameters for the next page.
+message PaginatedLogsData {
+  // An array of ResourceLogs.
+  repeated .opentelemetry.proto.logs.v1.ResourceLogs resource_logs = 1;
+  // The pagination parameters for the next page.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
+}
+
+// TelemetryQueryService is the service definition for querying telemetry data about workflows such as logs, traces
+// and metrics.
+service TelemetryQueryService {
+  rpc QueryJobLogs(QueryJobLogsRequest) returns (PaginatedLogsData);
+  rpc QueryLogsInInterval(QueryLogsInIntervalRequest) returns (PaginatedLogsData);
+}

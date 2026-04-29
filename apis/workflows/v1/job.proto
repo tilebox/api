@@ -5,6 +5,8 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "opentelemetry/proto/logs/v1/logs.proto";
+import "opentelemetry/proto/trace/v1/trace.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";

@@ -6,6 +6,7 @@ modules:
 deps:
   - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
+  - buf.build/opentelemetry/opentelemetry
 lint: # https://buf.build/docs/lint/rules/
   use: # enable all linters
     - STANDARD
