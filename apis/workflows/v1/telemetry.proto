@@ -50,9 +50,31 @@ message PaginatedLogsData {
   tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
 }
 
+// QueryJobLogsRequest is the request message for querying logs of a specific job, in ascending or descending order,
+// with pagination support.
+message QueryJobSpansRequest {
+  // The ID of the job to query logs for.
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+  // The pagination parameters for this request.
+  tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
+  // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
+  SortDirection sort_direction = 3;
+}
+
+// PaginatedSpansData is the response message for paginated log queries. It's a message compatible with LogsData,
+// but with an additional field for pagination parameters for the next page.
+message PaginatedSpansData {
+  // An array of ResourceLogs.
+  repeated .opentelemetry.proto.trace.v1.ResourceSpans resource_spans = 1;
+  // The pagination parameters for the next page.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
+}
+
 // TelemetryQueryService is the service definition for querying telemetry data about workflows such as logs, traces
 // and metrics.
 service TelemetryQueryService {
   rpc QueryJobLogs(QueryJobLogsRequest) returns (PaginatedLogsData);
   rpc QueryLogsInInterval(QueryLogsInIntervalRequest) returns (PaginatedLogsData);
+
+  rpc QueryJobSpans(QueryJobSpansRequest) returns (PaginatedSpansData);
 }
