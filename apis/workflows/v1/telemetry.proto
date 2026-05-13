@@ -9,16 +9,6 @@ import "opentelemetry/proto/trace/v1/trace.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
-// SortDirection specifies the direction in which to sort log entries when querying logs. It can be used in combination
-// with the cursor field in TelemetryPagination to paginate through log entries in either ascending or descending order.
-enum SortDirection {
-  SORT_DIRECTION_UNSPECIFIED = 0;
-  // Sort in ascending order (oldest entries first).
-  SORT_DIRECTION_ASCENDING = 1;
-  // Sort in descending order (newest entries first).
-  SORT_DIRECTION_DESCENDING = 2;
-}
-
 // QueryJobLogsRequest is the request message for querying logs of a specific job, in ascending or descending order,
 // with pagination support.
 message QueryJobLogsRequest {
@@ -27,7 +17,7 @@ message QueryJobLogsRequest {
   // The pagination parameters for this request.
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
-  SortDirection sort_direction = 3;
+  tilebox.v1.SortDirection sort_direction = 3;
 }
 
 // QueryLogsInIntervalRequest is the request message for querying logs in a specific time interval.
@@ -38,7 +28,7 @@ message QueryLogsInIntervalRequest {
   // The pagination parameters for this request.
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to descending order (newest entries first).
-  SortDirection sort_direction = 3;
+  tilebox.v1.SortDirection sort_direction = 3;
 }
 
 // PaginatedLogsData is the response message for paginated log queries. It's a message compatible with LogsData,
@@ -58,7 +48,7 @@ message QueryJobSpansRequest {
   // The pagination parameters for this request.
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
-  SortDirection sort_direction = 3;
+  tilebox.v1.SortDirection sort_direction = 3;
 }
 
 // PaginatedSpansData is the response message for paginated log queries. It's a message compatible with LogsData,

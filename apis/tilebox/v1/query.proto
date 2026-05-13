@@ -51,3 +51,13 @@ message Pagination {
   // This is the id of the last entry returned in the previous page as the next parameter in each paginated query.
   tilebox.v1.ID starting_after = 2 [features.field_presence = EXPLICIT];
 }
+
+// SortDirection specifies the direction in which to sort log entries when querying logs. It can be used in combination
+// with the cursor field in TelemetryPagination to paginate through log entries in either ascending or descending order.
+enum SortDirection {
+  SORT_DIRECTION_UNSPECIFIED = 0;
+  // Sort in ascending order (oldest entries first).
+  SORT_DIRECTION_ASCENDING = 1;
+  // Sort in descending order (newest entries first).
+  SORT_DIRECTION_DESCENDING = 2;
+}

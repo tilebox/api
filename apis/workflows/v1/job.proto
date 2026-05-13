@@ -134,6 +134,8 @@ message QueryJobsRequest {
   QueryFilters filters = 1;
   // The pagination parameters for this request.
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
+  // The sort order for jobs (by submission date). Defaults to descending order (newest jobs first).
+  tilebox.v1.SortDirection sort_direction = 3;
 }
 
 // A list of jobs.
