@@ -5,9 +5,27 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
 
 option features.field_presence = IMPLICIT;
+
+// A cluster is a grouping of tasks that are related.
+message Cluster {
+  // 1 is reserved for a potential id field in the future.
+  reserved 1;
+  // The unique slug of the cluster within the namespace.
+  string slug = 2;
+  // The display name of the cluster.
+  string display_name = 3;
+  // Where the cluster is deletable
+  bool deletable = 4;
+  // The workflows that are currently deployed to this cluster. Each workflow will only contain one release,
+  // which is the currently deployed release for that workflow on this cluster.
+  repeated Workflow deployed_releases = 5;
+}
 
 // CreateClusterRequest creates a new cluster.
 message CreateClusterRequest {
@@ -17,7 +35,7 @@ message CreateClusterRequest {
 
 // GetClusterRequest requests details for a cluster.
 message GetClusterRequest {
-  // The slug of the cluster to get details for.
+  // The slug of the cluster to get details for. Empty string requests the default cluster.
   string cluster_slug = 1;
 }
 
@@ -39,10 +57,100 @@ message ListClustersResponse {
   repeated Cluster clusters = 1;
 }
 
+// GetWorkflowRequest requests details for a workflow.
+message GetWorkflowRequest {
+  // The slug of the workflow to get details for.
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// PublishWorkflowReleaseRequest publishes a new workflow release artifact, and associates it with a workflow.
+message PublishWorkflowReleaseRequest {
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  tilebox.v1.ID artifact_id = 2 [(buf.validate.field).required = true];
+  repeated TaskIdentifier tasks = 3 [(buf.validate.field).repeated.min_items = 1];
+}
+
+// ListWorkflowsRequest lists all workflows.
+message ListWorkflowsRequest {}
+
+// ListWorkflowsResponse is the response to ListWorkflowsRequest.
+message ListWorkflowsResponse {
+  repeated Workflow workflows = 1;
+}
+
+// CreateWorkflowRequest creates a new workflow, with a name and an optional description.
+// A workflow slug will be generated based on the name.
+message CreateWorkflowRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string description = 2;
+}
+
+// Workflow represents a logical grouping for a set of tasks. It can have multiple releases, each comprising a different
+// set of tasks.
+message Workflow {
+  reserved 1; // reserved for workflow ID, which is currently not exposed in the API but may be added in the future.
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  repeated WorkflowRelease releases = 5;
+}
+
+// WorkflowRelease represents an immutable release of a workflow, which includes a set of tasks and an artifact.
+message WorkflowRelease {
+  tilebox.v1.ID id = 1;
+  tilebox.v1.ID artifact_id = 2;
+  repeated TaskIdentifier tasks = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// DeployWorkflowReleaseRequest deploys a workflow release to a set of clusters, making the tasks available for
+// execution on those clusters.
+message DeployWorkflowReleaseRequest {
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  tilebox.v1.ID release_id = 2;
+  repeated string cluster_slugs = 3 [
+    (buf.validate.field).repeated.min_items = 0,
+    (buf.validate.field).repeated.items.string.min_bytes = 1
+  ];
+}
+
+// DeployWorkflowReleaseResponse is the response to DeployWorkflowReleaseRequest,
+// containing the deployed release and the new state of all the clusters it was deployed to.
+message DeployWorkflowReleaseResponse {
+  WorkflowRelease release = 1;
+  repeated Cluster clusters = 2;
+}
+
+// UndeployWorkflowReleaseRequest undeploys a workflow release from a set of clusters, making them no longer available
+// for execution on those clusters.
+message UndeployWorkflowReleaseRequest {
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  tilebox.v1.ID release_id = 2;
+  repeated string cluster_slugs = 3 [
+    (buf.validate.field).repeated.min_items = 1,
+    (buf.validate.field).repeated.items.string.min_bytes = 1
+  ];
+}
+
+// UndeployWorkflowReleaseResponse is the response to UndeployWorkflowReleaseRequest,
+// containing the undeployed release and the new state of all the clusters it was undeployed from.
+message UndeployWorkflowReleaseResponse {
+  WorkflowRelease release = 1;
+  repeated Cluster clusters = 2;
+}
+
 // A service for managing workflows.
 service WorkflowsService {
   rpc CreateCluster(CreateClusterRequest) returns (Cluster);
   rpc GetCluster(GetClusterRequest) returns (Cluster);
   rpc DeleteCluster(DeleteClusterRequest) returns (DeleteClusterResponse);
   rpc ListClusters(ListClustersRequest) returns (ListClustersResponse);
+
+  rpc CreateWorkflow(CreateWorkflowRequest) returns (Workflow);
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse);
+  rpc GetWorkflow(GetWorkflowRequest) returns (Workflow);
+  rpc PublishWorkflowRelease(PublishWorkflowReleaseRequest) returns (WorkflowRelease);
+
+  rpc DeployWorkflowRelease(DeployWorkflowReleaseRequest) returns (DeployWorkflowReleaseResponse);
+  rpc UndeployWorkflowRelease(UndeployWorkflowReleaseRequest) returns (UndeployWorkflowReleaseResponse);
 }
