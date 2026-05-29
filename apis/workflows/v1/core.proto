@@ -11,18 +11,6 @@ import "tilebox/v1/id.proto";
 
 option features.field_presence = IMPLICIT;
 
-// A cluster is a grouping of tasks that are related.
-message Cluster {
-  // 1 is reserved for a potential id field in the future.
-  reserved 1;
-  // The unique slug of the cluster within the namespace.
-  string slug = 2;
-  // The display name of the cluster.
-  string display_name = 3;
-  // Where the cluster is deletable
-  bool deletable = 4;
-}
-
 // A job is a logical grouping of tasks that are related.
 message Job {
   tilebox.v1.ID id = 1;
@@ -178,6 +166,11 @@ message TaskIdentifier {
     min_bytes: 1
     pattern: "^v(\\d+)\\.(\\d+)$"
   }];
+}
+
+// A list of task identifiers.
+message TaskIdentifiers {
+  repeated TaskIdentifier identifiers = 1;
 }
 
 // A list of tasks.
