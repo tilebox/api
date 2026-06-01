@@ -1,0 +1,40 @@
+edition = "2023";
+
+package workflows.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "workflows/v1/core.proto";
+import "workflows/v1/task.proto";
+
+// HandshakeRequest is sent by the runner to a worker runtime to discover its capabilities.
+message HandshakeRequest {}
+
+// HandshakeResponse is the response to a handshake request, containing the task identifiers that the worker can execute.
+message HandshakeResponse {
+  workflows.v1.TaskIdentifiers task_identifiers = 1;
+}
+
+// ExecuteTaskResponse is the response of a worker runtime to a request to execute a task, after the task has
+// been executed.
+message ExecuteTaskResponse {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "computed_task",
+      "failed_task"
+    ]
+  };
+
+  // If the task execution succeeded, this field will be set with the computed task result.
+  workflows.v1.ComputedTask computed_task = 1;
+
+  // If the task execution failed, this field will be set with details about the failure.
+  workflows.v1.TaskFailedRequest failed_task = 2;
+}
+
+// WorkerService defines the RPC interface between a runner and a a worker runtime that can execute workflow tasks.
+service WorkerService {
+  rpc Handshake(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc ExecuteTask(workflows.v1.Task) returns (workflows.v1.ComputedTask) {}
+  rpc Shutdown(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}
