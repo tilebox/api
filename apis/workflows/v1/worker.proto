@@ -4,11 +4,30 @@ package workflows.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
+import "tilebox/v1/id.proto";
+import "workflows/v1/automation.proto";
 import "workflows/v1/core.proto";
 import "workflows/v1/task.proto";
+import "workflows/v1/workflows.proto";
 
 // HandshakeRequest is sent by the runner to a worker runtime to discover its capabilities.
-message HandshakeRequest {}
+message HandshakeRequest {
+  RunnerMetadata metadata = 1;
+  // The cluster that the worker runtime is running on.
+  workflows.v1.Cluster cluster = 2;
+  // The storage locations that the worker runtime can access, for triggered automations.
+  repeated StorageLocation locations = 3;
+}
+
+// Some metadata about the runner that this worker runtime is connected to, to be able to include it in logs and traces.
+message RunnerMetadata {
+  // The id of the runner that this worker runtime is connected to.
+  tilebox.v1.ID runner_id = 1;
+  // The traceparent that should be used for any traces emitted by this worker runtime (outside of task execution,
+  // which has its own traceparent propagation from jobs). This allows us to correlate any logs and traces emitted
+  // by the worker runtime with the runner that it's connected to.
+  string traceparent = 2;
+}
 
 // HandshakeResponse is the response to a handshake request, containing the task identifiers that the worker can execute.
 message HandshakeResponse {
