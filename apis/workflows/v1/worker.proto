@@ -35,6 +35,6 @@ message ExecuteTaskResponse {
 // WorkerService defines the RPC interface between a runner and a a worker runtime that can execute workflow tasks.
 service WorkerService {
   rpc Handshake(HandshakeRequest) returns (HandshakeResponse) {}
-  rpc ExecuteTask(workflows.v1.Task) returns (workflows.v1.ComputedTask) {}
+  rpc ExecuteTask(workflows.v1.Task) returns (ExecuteTaskResponse) {}
   rpc Shutdown(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
