@@ -67,7 +67,7 @@ message GetWorkflowRequest {
 message PublishWorkflowReleaseRequest {
   string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
   tilebox.v1.ID artifact_id = 2 [(buf.validate.field).required = true];
-  repeated TaskIdentifier tasks = 3 [(buf.validate.field).repeated.min_items = 1];
+  ReleaseContent content = 3 [(buf.validate.field).required = true];
 }
 
 // ListWorkflowsRequest lists all workflows.
@@ -98,9 +98,33 @@ message Workflow {
 // WorkflowRelease represents an immutable release of a workflow, which includes a set of tasks and an artifact.
 message WorkflowRelease {
   tilebox.v1.ID id = 1;
-  tilebox.v1.ID artifact_id = 2;
-  repeated TaskIdentifier tasks = 3;
+  Artifact artifact = 2;
+  ReleaseContent content = 3;
   google.protobuf.Timestamp created_at = 4;
+}
+
+// Artifact represents the artifact associated with a workflow release,
+// which is the file that contains the code and dependencies needed to execute the tasks in the release.
+message Artifact {
+  tilebox.v1.ID id = 1;
+  string digest = 2 [(buf.validate.field).string.pattern = "^[a-f0-9]{64}$"];
+}
+
+// ReleaseContent represents the content of a workflow release, which is the set of files that are included,
+// the list of task identifiers, and the command to start a worker runtime for executing the tasks in the release.
+// The fingerprint is a hash of the release content.
+message ReleaseContent {
+  string fingerprint = 1 [(buf.validate.field).string.pattern = "^[a-f0-9]{64}$"];
+  repeated TaskIdentifier tasks = 2 [(buf.validate.field).repeated.min_items = 1];
+  Path root = 3;
+  repeated string command = 4;
+}
+
+// Path represents a file or directory path in the release content. If it is a directory, it can have child paths.
+message Path {
+  string path = 1;
+  bool directory = 2;
+  repeated Path children = 3;
 }
 
 // DeployWorkflowReleaseRequest deploys a workflow release to a set of clusters, making the tasks available for
