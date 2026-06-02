@@ -114,10 +114,19 @@ message Artifact {
 // the list of task identifiers, and the command to start a worker runtime for executing the tasks in the release.
 // The fingerprint is a hash of the release content.
 message ReleaseContent {
+  // A fingerprint of the release content, which is a hash of the task identifiers, files, runner object path,
+  // and command override. Used to determine if two releases have the same content, for idempotent builds.
   string fingerprint = 1 [(buf.validate.field).string.pattern = "^[a-f0-9]{64}$"];
+  // List of task identifiers included in the release artifact.
   repeated TaskIdentifier tasks = 2 [(buf.validate.field).repeated.min_items = 1];
-  Path root = 3;
-  repeated string command = 4;
+  // List of files/directories included in the release artifact.
+  repeated Path files = 3;
+  // The python module/object path to the runner instance, e.g. "my_module.my_runner:runner".
+  string runner_object_path = 4;
+  // A custom command override for starting a worker runtime. This is optional, and if not set defaults to
+  // "uv run python -m tilebox.workflows.runner <runner_object_path>". This allows users to specify a custom command
+  // for starting the worker runtime, e.g. to set environment variables or use a different entrypoint.
+  repeated string command_override = 5;
 }
 
 // Path represents a file or directory path in the release content. If it is a directory, it can have child paths.
