@@ -23,7 +23,19 @@ message InitializeRunnerRequest {
   // The workflow (and the release) that this worker was created from.
   workflows.v1.Workflow workflow = 4;
   // The storage locations that the worker runtime can access, for triggered automations.
-  repeated StorageLocation locations = 5;
+  TileboxAPIConnection api_connection = 5;
+}
+
+// TileboxAPIConnection is a message containing the information needed for a worker runtime to connect to the Tilebox
+// API, to e.g. export observability data to (logs and traces). It's the credentials that the tilebox-cli locally
+// uses to connect to the Tilebox API, and is passed down to the worker runtimes so that they can also connect to the
+// Tilebox API in the same way. Since this only is done on a local machine, via a unix socket, and not in a shared
+// environment or over the internet, this is safe to do.
+message TileboxAPIConnection {
+  // The API url to which the worker runtime can connect, to e.g. export observability data to (logs and traces).
+  string url = 1;
+  // The token to use for authenticating to the API.
+  string token = 2;
 }
 
 // HandshakeResponse is the response to a handshake request, containing the task identifiers that the worker can execute.
