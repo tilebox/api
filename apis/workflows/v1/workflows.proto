@@ -63,12 +63,32 @@ message GetWorkflowRequest {
   string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
 }
 
+// DeleteWorkflowRequest deletes an existing workflow.
+message DeleteWorkflowRequest {
+  // The slug of the workflow to delete.
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// DeleteWorkflowResponse is the response to DeleteWorkflowRequest.
+message DeleteWorkflowResponse {}
+
 // PublishWorkflowReleaseRequest publishes a new workflow release artifact, and associates it with a workflow.
 message PublishWorkflowReleaseRequest {
   string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
   tilebox.v1.ID artifact_id = 2 [(buf.validate.field).required = true];
   ReleaseContent content = 3 [(buf.validate.field).required = true];
 }
+
+// UnpublishWorkflowReleaseRequest unpublishes a specific workflow release.
+message UnpublishWorkflowReleaseRequest {
+  // The slug of the workflow containing the release to unpublish.
+  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  // The ID of the release to unpublish.
+  tilebox.v1.ID release_id = 2 [(buf.validate.field).required = true];
+}
+
+// UnpublishWorkflowReleaseResponse is the response to UnpublishWorkflowReleaseRequest.
+message UnpublishWorkflowReleaseResponse {}
 
 // ListWorkflowsRequest lists all workflows.
 message ListWorkflowsRequest {}
@@ -101,6 +121,7 @@ message WorkflowRelease {
   Artifact artifact = 2;
   ReleaseContent content = 3;
   google.protobuf.Timestamp created_at = 4;
+  repeated Cluster clusters = 5; // List of clusters that the workflow is published to
 }
 
 // Artifact represents the artifact associated with a workflow release,
@@ -182,7 +203,9 @@ service WorkflowsService {
   rpc CreateWorkflow(CreateWorkflowRequest) returns (Workflow);
   rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse);
   rpc GetWorkflow(GetWorkflowRequest) returns (Workflow);
+  rpc DeleteWorkflow(DeleteWorkflowRequest) returns (DeleteWorkflowResponse);
   rpc PublishWorkflowRelease(PublishWorkflowReleaseRequest) returns (WorkflowRelease);
+  rpc UnpublishWorkflowRelease(UnpublishWorkflowReleaseRequest) returns (UnpublishWorkflowReleaseResponse);
 
   rpc DeployWorkflowRelease(DeployWorkflowReleaseRequest) returns (DeployWorkflowReleaseResponse);
   rpc UndeployWorkflowRelease(UndeployWorkflowReleaseRequest) returns (UndeployWorkflowReleaseResponse);

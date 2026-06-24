@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/bufbuild/buf
-    rev: v1.68.4
+    rev: v1.71.0
     hooks:
     - id: buf-lint
     - id: buf-format

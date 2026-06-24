@@ -261,9 +261,7 @@ message TaskSubmissionGroup {
   // to enable packed encoding of the repeated fields.
   repeated bytes inputs = 2 [(buf.validate.field).repeated = {
     min_items: 1 // we don't allow empty submission groups
-    items: {
-      bytes: {max_len: 2048}
-    }
+    items: {bytes: {max_len: 2048}}
   }];
   // Index of the task identifier in the identifier_lookup field of the containing TaskSubmissions message
   // for each task.
