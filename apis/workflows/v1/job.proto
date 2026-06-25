@@ -126,6 +126,9 @@ message QueryFilters {
 
   // Filter jobs by their tasks (whether they have tasks in a certain state).
   repeated TaskState task_states = 6;
+
+  // Filter jobs by their clusters (whether they have tasks on certain clusters).
+  repeated string cluster_slugs = 7;
 }
 
 // QueryJobsRequest requests a list of jobs.
