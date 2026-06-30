@@ -20,6 +20,8 @@ message Cluster {
   string slug = 2;
   // The display name of the cluster.
   string display_name = 3;
+  // A description for the cluster.
+  string description = 6;
   // Where the cluster is deletable
   bool deletable = 4;
   // The workflows that are currently deployed to this cluster. Each workflow will only contain one release,
@@ -30,13 +32,32 @@ message Cluster {
 // CreateClusterRequest creates a new cluster.
 message CreateClusterRequest {
   // The name of the cluster.
-  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
+  // A description for the cluster.
+  string description = 2 [(buf.validate.field).string.max_len = 50000];
+  // An optional cluster slug. If not set, a slug derived from the name will automatically be generated.
+  string slug = 3;
 }
 
 // GetClusterRequest requests details for a cluster.
 message GetClusterRequest {
   // The slug of the cluster to get details for. Empty string requests the default cluster.
   string cluster_slug = 1;
+}
+
+// UpdateClusterRequest updates an existing cluster, by updating all fields that are set to their new values.
+// If a field is not set, it will not be updated.
+message UpdateClusterRequest {
+  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 3 [features.field_presence = EXPLICIT];
 }
 
 // DeleteClusterRequest deletes an existing cluster.
@@ -197,6 +218,7 @@ message UndeployWorkflowReleaseResponse {
 service WorkflowsService {
   rpc CreateCluster(CreateClusterRequest) returns (Cluster);
   rpc GetCluster(GetClusterRequest) returns (Cluster);
+  rpc UpdateCluster(UpdateClusterRequest) returns (Cluster);
   rpc DeleteCluster(DeleteClusterRequest) returns (DeleteClusterResponse);
   rpc ListClusters(ListClustersRequest) returns (ListClustersResponse);
 
