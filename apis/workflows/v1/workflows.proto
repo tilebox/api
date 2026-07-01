@@ -105,6 +105,25 @@ message GetWorkflowRequest {
   ];
 }
 
+// UpdateWorkflowRequest updates an existing workflow, by updating all fields that are set to their new values.
+// If a field is not set, it will not be updated.
+message UpdateWorkflowRequest {
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
+  string name = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
+  string description = 3 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.max_len = 50000
+  ];
+}
+
 // DeleteWorkflowRequest deletes an existing workflow.
 message DeleteWorkflowRequest {
   // The slug of the workflow to delete.
@@ -270,6 +289,7 @@ service WorkflowsService {
   rpc CreateWorkflow(CreateWorkflowRequest) returns (Workflow);
   rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse);
   rpc GetWorkflow(GetWorkflowRequest) returns (Workflow);
+  rpc UpdateWorkflow(UpdateWorkflowRequest) returns (Workflow);
   rpc DeleteWorkflow(DeleteWorkflowRequest) returns (DeleteWorkflowResponse);
   rpc PublishWorkflowRelease(PublishWorkflowReleaseRequest) returns (WorkflowRelease);
   rpc UnpublishWorkflowRelease(UnpublishWorkflowReleaseRequest) returns (UnpublishWorkflowReleaseResponse);
