@@ -39,31 +39,48 @@ message CreateClusterRequest {
   // A description for the cluster.
   string description = 2 [(buf.validate.field).string.max_len = 50000];
   // An optional cluster slug. If not set, a slug derived from the name will automatically be generated.
-  string slug = 3;
+  string slug = 3 [
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
 }
 
 // GetClusterRequest requests details for a cluster.
 message GetClusterRequest {
   // The slug of the cluster to get details for. Empty string requests the default cluster.
-  string cluster_slug = 1;
+  string cluster_slug = 1 [
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
 }
 
 // UpdateClusterRequest updates an existing cluster, by updating all fields that are set to their new values.
 // If a field is not set, it will not be updated.
 message UpdateClusterRequest {
-  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string cluster_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
   string name = 2 [
     features.field_presence = EXPLICIT,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 100
   ];
-  string description = 3 [features.field_presence = EXPLICIT];
+  string description = 3 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.max_len = 50000
+  ];
 }
 
 // DeleteClusterRequest deletes an existing cluster.
 message DeleteClusterRequest {
   // The slug of the cluster to delete.
-  string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string cluster_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
 }
 
 // DeleteClusterResponse is the response to DeleteClusterRequest.
@@ -81,13 +98,21 @@ message ListClustersResponse {
 // GetWorkflowRequest requests details for a workflow.
 message GetWorkflowRequest {
   // The slug of the workflow to get details for.
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
 }
 
 // DeleteWorkflowRequest deletes an existing workflow.
 message DeleteWorkflowRequest {
   // The slug of the workflow to delete.
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
 }
 
 // DeleteWorkflowResponse is the response to DeleteWorkflowRequest.
@@ -95,7 +120,11 @@ message DeleteWorkflowResponse {}
 
 // PublishWorkflowReleaseRequest publishes a new workflow release artifact, and associates it with a workflow.
 message PublishWorkflowReleaseRequest {
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
   tilebox.v1.ID artifact_id = 2 [(buf.validate.field).required = true];
   ReleaseContent content = 3 [(buf.validate.field).required = true];
 }
@@ -103,7 +132,11 @@ message PublishWorkflowReleaseRequest {
 // UnpublishWorkflowReleaseRequest unpublishes a specific workflow release.
 message UnpublishWorkflowReleaseRequest {
   // The slug of the workflow containing the release to unpublish.
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
   // The ID of the release to unpublish.
   tilebox.v1.ID release_id = 2 [(buf.validate.field).required = true];
 }
@@ -181,7 +214,11 @@ message Path {
 // DeployWorkflowReleaseRequest deploys a workflow release to a set of clusters, making the tasks available for
 // execution on those clusters.
 message DeployWorkflowReleaseRequest {
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
     (buf.validate.field).repeated.min_items = 0,
@@ -199,7 +236,11 @@ message DeployWorkflowReleaseResponse {
 // UndeployWorkflowReleaseRequest undeploys a workflow release from a set of clusters, making them no longer available
 // for execution on those clusters.
 message UndeployWorkflowReleaseRequest {
-  string workflow_slug = 1 [(buf.validate.field).string.min_len = 1];
+  string workflow_slug = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
     (buf.validate.field).repeated.min_items = 1,
