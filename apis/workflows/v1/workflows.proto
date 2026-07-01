@@ -222,7 +222,9 @@ message DeployWorkflowReleaseRequest {
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
     (buf.validate.field).repeated.min_items = 0,
-    (buf.validate.field).repeated.items.string.min_bytes = 1
+    (buf.validate.field).repeated.items.string.min_bytes = 1,
+    (buf.validate.field).repeated.items.string.max_len = 100,
+    (buf.validate.field).repeated.items.string.pattern = "^[A-Za-z0-9-]*$"
   ];
 }
 
@@ -243,8 +245,10 @@ message UndeployWorkflowReleaseRequest {
   ];
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
-    (buf.validate.field).repeated.min_items = 1,
-    (buf.validate.field).repeated.items.string.min_bytes = 1
+    (buf.validate.field).repeated.min_items = 0,
+    (buf.validate.field).repeated.items.string.min_bytes = 1,
+    (buf.validate.field).repeated.items.string.max_len = 100,
+    (buf.validate.field).repeated.items.string.pattern = "^[A-Za-z0-9-]*$"
   ];
 }
 
