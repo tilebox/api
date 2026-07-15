@@ -5,6 +5,7 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
@@ -98,6 +99,8 @@ message CronTrigger {
   tilebox.v1.ID id = 1;
   // A cron schedule for the trigger, e.g. "0 0 * * *" (every day at midnight)
   string schedule = 2 [(buf.validate.field).string.min_len = 1];
+  // The next time the cron schedule occurs, regardless of whether the automation is disabled.
+  google.protobuf.Timestamp next_scheduled_at = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // Automation is an actual submitted task that was triggered by a automation prototype.
