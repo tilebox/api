@@ -47,10 +47,17 @@ message QueryFilters {
   // Additional expressions over fields marked queryable in the dataset schema.
   // All top-level expressions are combined with each other and with the interval and spatial filters using logical AND.
   // Use a nested LogicalExpression for explicit OR, NOT, or grouped boolean logic.
-  repeated FilterExpression expressions = 4 [(buf.validate.field).repeated.max_items = 100];
+  // Protovalidate limits each list of expressions to 64 items. Before compiling a query, the server must also enforce:
+  // - at most 256 FilterExpression nodes in total across all top-level and nested expressions;
+  // - a maximum expression depth of 8, where a top-level FilterExpression has depth 1 and each nested operand adds 1;
+  // - every referenced field exists and is marked queryable; and
+  // - every comparison operator and literal kind is valid for the referenced field's descriptor.
+  repeated FilterExpression expressions = 4 [(buf.validate.field).repeated.max_items = 64];
 }
 
 // FilterExpression is a typed filter expression compatible with the Basic CQL2 property-to-literal subset.
+// Expressions use three-valued Boolean logic compatible with SQL and CQL2: true, false, and null (unknown). A datapoint
+// matches only when the complete filter expression evaluates to true; false and null results are excluded.
 message FilterExpression {
   option (buf.validate.message).oneof = {
     fields: [
@@ -67,7 +74,8 @@ message FilterExpression {
   FieldNullCheck is_null = 3;
 }
 
-// LogicalExpression combines nested filter expressions.
+// LogicalExpression combines nested filter expressions using SQL- and CQL2-compatible three-valued Boolean logic.
+// AND, OR, and NOT propagate null according to their standard truth tables; in particular, NOT(null) evaluates to null.
 message LogicalExpression {
   option (buf.validate.message).cel = {
     id: "logical_expression.operand_arity"
@@ -83,7 +91,7 @@ message LogicalExpression {
   // Operands for the logical operation. AND and OR require at least two; NOT requires exactly one.
   repeated FilterExpression operands = 2 [(buf.validate.field).repeated = {
     min_items: 1
-    max_items: 100
+    max_items: 64
   }];
 }
 
@@ -96,6 +104,9 @@ enum LogicalOperator {
 }
 
 // FieldComparison compares a queryable dataset field to a typed literal value.
+// Every comparison evaluates to null (unknown) when the field is absent or explicitly null, including NOT_EQUAL.
+// Consequently, both `field != value` and `NOT(field == value)` require the field to be present. To include absent or
+// null fields, explicitly combine the comparison with FieldNullCheck using OR.
 message FieldComparison {
   // Name of a top-level field in the dataset schema.
   string field_name = 1 [(buf.validate.field).string = {
@@ -123,8 +134,9 @@ enum FieldComparisonOperator {
   FIELD_COMPARISON_OPERATOR_GREATER_THAN_OR_EQUAL = 6;
 }
 
-// FieldNullCheck matches datapoints for which a queryable field is absent or explicitly null.
-// IS NOT NULL is represented by wrapping this expression in LOGICAL_OPERATOR_NOT.
+// FieldNullCheck matches datapoints for which a queryable field is absent or explicitly null. These states are
+// equivalent for filtering. IS NOT NULL is represented by wrapping this expression in LOGICAL_OPERATOR_NOT and matches
+// only datapoints for which the field is present and non-null.
 message FieldNullCheck {
   // Name of a top-level field in the dataset schema.
   string field_name = 1 [(buf.validate.field).string = {
