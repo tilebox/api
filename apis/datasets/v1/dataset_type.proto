@@ -12,19 +12,19 @@ import "tilebox/v1/id.proto";
 
 option features.field_presence = IMPLICIT;
 
-// Field describes a field of a dataset.
+// Field is the request representation of a dataset field. It intentionally combines only a protobuf field descriptor
+// with its Tilebox annotation, matching the information represented separately by AnnotatedType.
 message Field {
+  reserved 3;
+  reserved queryable;
+
   // The descriptor contains the name of the field, the type, optional labels (e.g. repeated) and other information.
   // If the type is TYPE_MESSAGE, then the type_name must be a fully qualified name to a well known type, e.g.
   // `datasets.v1.Vec3` or `google.protobuf.Timestamp`.
   google.protobuf.FieldDescriptorProto descriptor = 1 [(buf.validate.field).required = true];
 
-  // An optional description and example value for the field.
+  // Additional documentation, source mapping, and query metadata for the field.
   FieldAnnotation annotation = 2;
-
-  // A flag indicating whether the field should be queryable. This means we will build an index for the field, and
-  // allow users to query for certain values server-side.
-  bool queryable = 3 [(buf.validate.field).bool.const = false];
 }
 
 // DatasetKind is an enum describing the kind of dataset. A dataset kind specifies a set of default fields, that
@@ -40,13 +40,44 @@ enum DatasetKind {
   DATASET_KIND_SPATIOTEMPORAL = 2;
 }
 
-// FieldAnnotation contains additional information about a field in a dataset
+// FieldRole describes a semantic display role fulfilled by a dataset field.
+// Thumbnail discovery is intentionally not represented here: thumbnails are assets whose STAC asset roles include
+// thumbnail.
+enum FieldRole {
+  FIELD_ROLE_UNSPECIFIED = 0;
+
+  // The primary human-readable title or name used when displaying a datapoint.
+  FIELD_ROLE_PRIMARY_TITLE = 1;
+}
+
+// FieldAnnotation contains additional information about a field in a dataset.
 message FieldAnnotation {
   string description = 1;
   string example_value = 2;
+
+  // RFC 6901 JSON Pointer locating the field value in the source document.
+  // This allows flattened dataset fields to be reconstructed without relying on their protobuf field names.
+  string source_json_pointer = 3 [features.field_presence = EXPLICIT];
+
+  // Whether the field is projected into query storage and may be used in server-side filter expressions.
+  // Queryable fields are not necessarily backed by a secondary database index.
+  bool queryable = 4;
+
+  // Optional JSON Schema reference to emit as `$ref` when advertising this field as a queryable.
+  // For example, this may reference the canonical STAC extension schema definition for a property.
+  string queryable_json_schema_ref = 5 [features.field_presence = EXPLICIT];
+
+  // Semantic display roles fulfilled by this field.
+  repeated FieldRole roles = 6 [
+    (buf.validate.field).repeated.unique = true,
+    (buf.validate.field).repeated.items.enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
 }
 
-// DatasetType describes the type of a dataset.
+// DatasetType is the request representation of a dataset type, used when creating or updating a dataset.
 message DatasetType {
   // kind denotes the kind of dataset this type describes. We do not rely on the default fields to be set in our
   // array of fields - since that way users could circumvent those by manually sending requests not from our Console.
@@ -59,12 +90,15 @@ message DatasetType {
   repeated Field fields = 2;
 }
 
-// AnnotatedType describes a message type
+// AnnotatedType is the resolved representation returned on Dataset messages, including GetDataset responses.
+// It combines the generated protobuf descriptors with the corresponding Tilebox field annotations.
 message AnnotatedType {
   google.protobuf.FileDescriptorSet descriptor_set = 1;
   // the url of the type, one of the types defined in the descriptor
   string type_url = 2;
   reserved 3;
+  // Annotations corresponding by index to the FieldDescriptorProto entries of the message selected by type_url.
+  // Empty annotations must be retained so this positional mapping remains stable.
   repeated FieldAnnotation field_annotations = 4;
   DatasetKind kind = 5;
 }

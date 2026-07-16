@@ -7,6 +7,8 @@ package datasets.v1;
 import "buf/validate/validate.proto";
 import "datasets/v1/core.proto";
 import "datasets/v1/well_known_types.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
@@ -41,6 +43,125 @@ message QueryFilters {
   tilebox.v1.IDInterval datapoint_interval = 2;
 
   SpatialFilter spatial_extent = 3;
+
+  // Additional expressions over fields marked queryable in the dataset schema.
+  // All top-level expressions are combined with each other and with the interval and spatial filters using logical AND.
+  // Use a nested LogicalExpression for explicit OR, NOT, or grouped boolean logic.
+  repeated FilterExpression expressions = 4 [(buf.validate.field).repeated.max_items = 100];
+}
+
+// FilterExpression is a typed filter expression compatible with the Basic CQL2 property-to-literal subset.
+message FilterExpression {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "logical",
+      "comparison",
+      "is_null"
+    ]
+    required: true
+  };
+
+  // Exactly one expression node must be set.
+  LogicalExpression logical = 1;
+  FieldComparison comparison = 2;
+  FieldNullCheck is_null = 3;
+}
+
+// LogicalExpression combines nested filter expressions.
+message LogicalExpression {
+  option (buf.validate.message).cel = {
+    id: "logical_expression.operand_arity"
+    message: "NOT requires exactly one operand; AND and OR require at least two"
+    expression: "this.operator == 3 ? this.operands.size() == 1 : this.operands.size() >= 2"
+  };
+
+  // The logical operation to apply to operands.
+  LogicalOperator operator = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Operands for the logical operation. AND and OR require at least two; NOT requires exactly one.
+  repeated FilterExpression operands = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+// LogicalOperator specifies how nested filter expressions are combined.
+enum LogicalOperator {
+  LOGICAL_OPERATOR_UNSPECIFIED = 0;
+  LOGICAL_OPERATOR_AND = 1;
+  LOGICAL_OPERATOR_OR = 2;
+  LOGICAL_OPERATOR_NOT = 3;
+}
+
+// FieldComparison compares a queryable dataset field to a typed literal value.
+message FieldComparison {
+  // Name of a top-level field in the dataset schema.
+  string field_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 100
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+  // Comparison operation to apply.
+  FieldComparisonOperator operator = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Literal value. Its kind must match the field's protobuf descriptor.
+  FieldQueryValue value = 3 [(buf.validate.field).required = true];
+}
+
+// FieldComparisonOperator specifies a Basic CQL2 comparison operation.
+enum FieldComparisonOperator {
+  FIELD_COMPARISON_OPERATOR_UNSPECIFIED = 0;
+  FIELD_COMPARISON_OPERATOR_EQUAL = 1;
+  FIELD_COMPARISON_OPERATOR_NOT_EQUAL = 2;
+  FIELD_COMPARISON_OPERATOR_LESS_THAN = 3;
+  FIELD_COMPARISON_OPERATOR_LESS_THAN_OR_EQUAL = 4;
+  FIELD_COMPARISON_OPERATOR_GREATER_THAN = 5;
+  FIELD_COMPARISON_OPERATOR_GREATER_THAN_OR_EQUAL = 6;
+}
+
+// FieldNullCheck matches datapoints for which a queryable field is absent or explicitly null.
+// IS NOT NULL is represented by wrapping this expression in LOGICAL_OPERATOR_NOT.
+message FieldNullCheck {
+  // Name of a top-level field in the dataset schema.
+  string field_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 100
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+}
+
+// FieldQueryValue is a typed scalar or well-known-type literal used in a field comparison.
+message FieldQueryValue {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "bool_value",
+      "int64_value",
+      "uint64_value",
+      "double_value",
+      "string_value",
+      "timestamp_value",
+      "duration_value",
+      "enum_name",
+      "bytes_value"
+    ]
+    required: true
+  };
+
+  // Exactly one typed literal must be set. Explicit presence preserves zero and empty values.
+  bool bool_value = 1 [features.field_presence = EXPLICIT];
+  int64 int64_value = 2 [features.field_presence = EXPLICIT];
+  uint64 uint64_value = 3 [features.field_presence = EXPLICIT];
+  double double_value = 4 [features.field_presence = EXPLICIT];
+  string string_value = 5 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp timestamp_value = 6;
+  google.protobuf.Duration duration_value = 7;
+  // Symbolic value from the field's enum descriptor.
+  string enum_name = 8 [features.field_presence = EXPLICIT];
+  bytes bytes_value = 9 [features.field_presence = EXPLICIT];
 }
 
 // SpatialFilterMode specifies how geometries are compared to a given spatial filter.
