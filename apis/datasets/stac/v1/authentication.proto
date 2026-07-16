@@ -1,0 +1,191 @@
+// This file models the STAC Authentication 1.1 extension. Authentication schemes describe how access is granted;
+// concrete hrefs remain on assets and links, while their auth_refs select registry entries.
+// https://github.com/stac-extensions/authentication/blob/v1.1.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+option features.field_presence = IMPLICIT;
+
+// Authentication stores the Authentication 1.1 auth:schemes registry.
+message Authentication {
+  map<string, AuthenticationScheme> schemes = 1;
+}
+
+// KnownAuthenticationType is Tilebox's compact dictionary for the standard Authentication 1.1 scheme types, in the
+// same order as the extension specification. Authentication 1.1 has an open type vocabulary; all other values remain
+// available through AuthenticationScheme.custom_type.
+enum KnownAuthenticationType {
+  KNOWN_AUTHENTICATION_TYPE_UNSPECIFIED = 0;
+  // http
+  KNOWN_AUTHENTICATION_TYPE_HTTP = 1;
+  // s3
+  KNOWN_AUTHENTICATION_TYPE_S3 = 2;
+  // signedUrl
+  KNOWN_AUTHENTICATION_TYPE_SIGNED_URL = 3;
+  // oauth2
+  KNOWN_AUTHENTICATION_TYPE_OAUTH2 = 4;
+  // apiKey
+  KNOWN_AUTHENTICATION_TYPE_API_KEY = 5;
+  // openIdConnect
+  KNOWN_AUTHENTICATION_TYPE_OPEN_ID_CONNECT = 6;
+}
+
+// AuthenticationScheme describes one reusable authentication mechanism.
+message AuthenticationScheme {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "known_type",
+      "custom_type"
+    ]
+    required: true
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_scheme.api_key_fields"
+    message: "only apiKey authentication requires and permits name and location"
+    expression: "has(this.known_type) && this.known_type == 5 ? has(this.name) && has(this.location) : !has(this.name) && !has(this.location)"
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_scheme.http_fields"
+    message: "only http authentication requires and permits scheme"
+    expression: "has(this.known_type) && this.known_type == 1 ? has(this.scheme) : !has(this.scheme)"
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_scheme.flows"
+    message: "oauth2 authentication requires OAuth2 flows, signedUrl authentication requires signed URL flows, and other types do not permit flows"
+    expression: "has(this.known_type) && this.known_type == 4 ? this.flows.size() > 0 && this.flows.all(flow, has(flow.oauth2)) : has(this.known_type) && this.known_type == 3 ? this.flows.size() > 0 && this.flows.all(flow, has(flow.signed_url)) : this.flows.size() == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_scheme.unique_flow_keys"
+    message: "authentication flow keys must be unique within a scheme"
+    expression: "this.flows.all(flow, this.flows.filter(other, other.key == flow.key).size() == 1)"
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_scheme.open_id_connect_fields"
+    message: "only openIdConnect authentication requires and permits open_id_connect_url"
+    expression: "has(this.known_type) && this.known_type == 6 ? has(this.open_id_connect_url) : !has(this.open_id_connect_url)"
+  };
+
+  // Exactly one compact known type or exact custom Authentication 1.1 type string is set.
+  KnownAuthenticationType known_type = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+  string custom_type = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  string description = 3 [features.field_presence = EXPLICIT];
+  // API key parameter name. Required for apiKey authentication.
+  string name = 4 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // API key parameter location, conventionally `query`, `header`, or `cookie`. The vocabulary is open in the extension.
+  string location = 5 [
+    json_name = "in",
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // HTTP Authorization scheme, such as `basic` or `bearer`. The vocabulary is open in the extension.
+  string scheme = 6 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // OAuth2 or signed URL flows. Each key corresponds to one entry in the STAC flows map.
+  repeated AuthenticationFlow flows = 7;
+  // OpenID Connect discovery URL. Required when known_type is OPEN_ID_CONNECT.
+  string open_id_connect_url = 8 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.uri = true
+  ];
+}
+
+// AuthenticationFlow models one keyed entry in an Authentication Scheme Object's flows map. Exactly one flow value is
+// set without using a protobuf oneof, keeping generated client APIs straightforward.
+message AuthenticationFlow {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "oauth2",
+      "signed_url"
+    ]
+    required: true
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_flow.authorization_url"
+    message: "implicit and authorizationCode OAuth2 flows require authorization_url"
+    expression: "!has(this.oauth2) || !(this.key == 'implicit' || this.key == 'authorizationCode') || has(this.oauth2.authorization_url)"
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_flow.token_url"
+    message: "password, clientCredentials, and authorizationCode OAuth2 flows require token_url"
+    expression: "!has(this.oauth2) || !(this.key == 'password' || this.key == 'clientCredentials' || this.key == 'authorizationCode') || has(this.oauth2.token_url)"
+  };
+
+  // Flow map key. OAuth2 defines authorizationCode, implicit, password, and clientCredentials; custom keys are allowed.
+  string key = 1 [(buf.validate.field).string.min_len = 1];
+  OAuth2Flow oauth2 = 2;
+  SignedURLFlow signed_url = 3;
+}
+
+// OAuth2Flow models an Authentication 1.1 OAuth2 Flow Object.
+message OAuth2Flow {
+  string authorization_url = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.uri = true
+  ];
+  string token_url = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.uri = true
+  ];
+  // STAC requires scopes, but permits an empty map. Always emit an empty object when no scopes are available.
+  map<string, string> scopes = 3;
+  string refresh_url = 4 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.uri = true
+  ];
+}
+
+// SignedURLFlow models an Authentication 1.1 Signed URL Object.
+message SignedURLFlow {
+  string method = 1 [(buf.validate.field).string.min_len = 1];
+  string authorization_api = 2 [(buf.validate.field).string.uri = true];
+  map<string, AuthenticationParameter> parameters = 3;
+  string response_field = 4 [features.field_presence = EXPLICIT];
+}
+
+// AuthenticationParameter models a request parameter for a signed URL authorization API.
+message AuthenticationParameter {
+  // Parameter location, conventionally `query`, `header`, or `body`. The vocabulary is open in the extension.
+  string location = 1 [
+    json_name = "in",
+    (buf.validate.field).string.min_len = 1
+  ];
+  bool required = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).required = true
+  ];
+  string description = 3 [features.field_presence = EXPLICIT];
+  JSONSchema schema = 4;
+}
+
+// JSONSchema represents the object and boolean forms allowed by JSON Schema draft-07. The object form is intentionally
+// kept as Struct: Authentication parameters may use any draft-07 keywords, including nested schemas and custom keywords.
+message JSONSchema {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "object",
+      "boolean"
+    ]
+    required: true
+  };
+
+  google.protobuf.Struct object = 1;
+  bool boolean = 2 [features.field_presence = EXPLICIT];
+}

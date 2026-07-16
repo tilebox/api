@@ -1,0 +1,42 @@
+// This file models the STAC Product 1.0 extension for Tilebox assets and generated dataset fields. Product type and
+// timeliness category remain open provider vocabularies as required by the extension.
+// https://github.com/stac-extensions/product/blob/v1.0.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// ProductAcquisitionType contains the closed Product 1.0 product:acquisition_type vocabulary.
+enum ProductAcquisitionType {
+  PRODUCT_ACQUISITION_TYPE_UNSPECIFIED = 0;
+  PRODUCT_ACQUISITION_TYPE_NOMINAL = 1;
+  PRODUCT_ACQUISITION_TYPE_CALIBRATION = 2;
+  PRODUCT_ACQUISITION_TYPE_OTHER = 3;
+}
+
+// ProductProperties contains all Product 1.0 fields. In particular, type is an open string rather than an enum.
+message ProductProperties {
+  option (buf.validate.message).cel = {
+    id: "product.timeliness_category"
+    message: "product timeliness_category requires timeliness"
+    expression: "!has(this.timeliness_category) || has(this.timeliness)"
+  };
+
+  string type = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // ISO 8601 duration. This remains a string because calendar durations cannot always be represented by protobuf Duration.
+  string timeliness = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  string timeliness_category = 3 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  ProductAcquisitionType acquisition_type = 4 [(buf.validate.field).enum.defined_only = true];
+}
