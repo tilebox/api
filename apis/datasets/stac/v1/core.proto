@@ -1,0 +1,133 @@
+// This file contains compact representations of the core STAC 1.1 metadata shared by assets, links,
+// and properties (which are modelled as direct Tilebox dataset fields).
+
+// https://github.com/radiantearth/stac-spec/tree/v1.1.0
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// KnownMediaType is a compact dictionary of media types commonly used by STAC assets and links.
+enum KnownMediaType {
+  KNOWN_MEDIA_TYPE_UNSPECIFIED = 0;
+  // application/geo+json
+  KNOWN_MEDIA_TYPE_GEOJSON = 1;
+  // application/json
+  KNOWN_MEDIA_TYPE_JSON = 2;
+  // image/tiff; application=geotiff; profile=cloud-optimized
+  KNOWN_MEDIA_TYPE_CLOUD_OPTIMIZED_GEOTIFF = 3;
+  // image/jp2
+  KNOWN_MEDIA_TYPE_JPEG_2000 = 4;
+  // image/jpeg
+  KNOWN_MEDIA_TYPE_JPEG = 5;
+  // image/png
+  KNOWN_MEDIA_TYPE_PNG = 6;
+  // application/xml
+  KNOWN_MEDIA_TYPE_APPLICATION_XML = 7;
+  // application/zip
+  KNOWN_MEDIA_TYPE_ZIP = 8;
+  // application/x-directory
+  KNOWN_MEDIA_TYPE_DIRECTORY = 9;
+  // image/tiff; application=geotiff
+  KNOWN_MEDIA_TYPE_GEOTIFF = 10;
+  // image/tiff
+  KNOWN_MEDIA_TYPE_TIFF = 11;
+  // application/x-hdf5
+  KNOWN_MEDIA_TYPE_HDF5 = 12;
+  // application/x-hdf
+  KNOWN_MEDIA_TYPE_HDF = 13;
+  // application/netcdf
+  KNOWN_MEDIA_TYPE_NETCDF = 14;
+  // application/vnd.zarr; version=2
+  KNOWN_MEDIA_TYPE_ZARR_V2 = 15;
+  // application/vnd.zarr; version=3
+  KNOWN_MEDIA_TYPE_ZARR_V3 = 16;
+  // application/vnd.apache.parquet
+  KNOWN_MEDIA_TYPE_PARQUET = 17;
+  // application/geopackage+sqlite3
+  KNOWN_MEDIA_TYPE_GEOPACKAGE = 18;
+  // application/vnd.laszip+copc
+  KNOWN_MEDIA_TYPE_COPC = 19;
+  // text/html
+  KNOWN_MEDIA_TYPE_HTML = 20;
+  // text/plain
+  KNOWN_MEDIA_TYPE_TEXT = 21;
+  // text/xml
+  KNOWN_MEDIA_TYPE_TEXT_XML = 22;
+  // application/vnd.flatgeobuf
+  KNOWN_MEDIA_TYPE_FLATGEOBUF = 23;
+  // application/vnd.pmtiles
+  KNOWN_MEDIA_TYPE_PMTILES = 24;
+  // application/vnd.nitf
+  KNOWN_MEDIA_TYPE_NITF = 25;
+  // application/octet-stream
+  KNOWN_MEDIA_TYPE_OCTET_STREAM = 26;
+}
+
+// MediaType stores a common media type compactly while retaining STAC's open media-type vocabulary.
+message MediaType {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "known",
+      "custom"
+    ]
+    required: true
+  };
+
+  // The exact media type represented by either the compact dictionary or a custom string. Exactly one is set.
+  KnownMediaType known = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+  string custom = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// ProviderRole contains the closed STAC 1.1 Provider role vocabulary.
+enum ProviderRole {
+  PROVIDER_ROLE_UNSPECIFIED = 0;
+  PROVIDER_ROLE_PRODUCER = 1;
+  PROVIDER_ROLE_LICENSOR = 2;
+  PROVIDER_ROLE_PROCESSOR = 3;
+  PROVIDER_ROLE_HOST = 4;
+}
+
+// Provider is reusable as the element type of a flattened STAC properties.providers dataset field.
+message Provider {
+  string name = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  string description = 2 [features.field_presence = EXPLICIT];
+  repeated ProviderRole roles = 3 [(buf.validate.field).repeated.items.enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  string url = 4 [features.field_presence = EXPLICIT];
+}
+
+// Link contains the STAC 1.1 Link Object fields used by the supported Items.
+message Link {
+  string href = 1 [(buf.validate.field).string.min_len = 1];
+  string rel = 2 [(buf.validate.field).string.min_len = 1];
+  MediaType media_type = 3;
+  string title = 4 [features.field_presence = EXPLICIT];
+  // Keys into the item-level Storage.schemes registry.
+  repeated string storage_refs = 5;
+  // Keys into the item-level Authentication.schemes registry.
+  repeated string auth_refs = 6;
+}
+
+// Links contains the ordered Link Objects of a STAC entity.
+message Links {
+  repeated Link links = 1;
+}

@@ -1,0 +1,61 @@
+// This file models the STAC Storage 2.0 extension registry independently from the concrete hrefs stored on assets and
+// links. Asset and link storage_refs contain keys into Storage.schemes.
+// https://github.com/stac-extensions/storage/blob/v2.0.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// Storage stores the Storage 2.0 storage:schemes registry.
+message Storage {
+  map<string, StorageScheme> schemes = 1;
+}
+
+// KnownStorageType is Tilebox's compact dictionary for common open Storage 2.0 type strings.
+enum KnownStorageType {
+  KNOWN_STORAGE_TYPE_UNSPECIFIED = 0;
+  // aws-s3
+  KNOWN_STORAGE_TYPE_AWS_S3 = 1;
+  // custom-s3
+  KNOWN_STORAGE_TYPE_CUSTOM_S3 = 2;
+  // ms-azure
+  KNOWN_STORAGE_TYPE_MICROSOFT_AZURE = 3;
+  // Tilebox convention exported as the custom Storage type string `google-cloud-storage`.
+  KNOWN_STORAGE_TYPE_GOOGLE_CLOUD_STORAGE = 4;
+}
+
+// StorageScheme describes a storage provider independently of concrete asset hrefs.
+message StorageScheme {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "known_type",
+      "custom_type"
+    ]
+    required: true
+  };
+
+  // Exactly one compact known type or exact custom Storage 2.0 type string is set.
+  KnownStorageType known_type = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+  string custom_type = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Provider endpoint/API URI or URI template, not an asset href prefix.
+  string platform = 3 [(buf.validate.field).string.min_len = 1];
+  string title = 4 [features.field_presence = EXPLICIT];
+  string description = 5 [features.field_presence = EXPLICIT];
+  string region = 6 [features.field_presence = EXPLICIT];
+  bool requester_pays = 7 [features.field_presence = EXPLICIT];
+  // Maps the provider-specific `class` property used by the Copernicus example.
+  string storage_class = 8 [features.field_presence = EXPLICIT];
+}

@@ -1,0 +1,15 @@
+// This file models the typed processing:software value from the STAC Processing 1.2 extension. The dynamic software
+// names remain map keys instead of becoming generated dataset field names.
+// https://github.com/stac-extensions/processing/blob/v1.2.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// ProcessingSoftware maps each application or library name to its version, tag, commit, or equivalent identifier.
+message ProcessingSoftware {
+  map<string, string> versions = 1 [(buf.validate.field).map = {keys: {string: {min_len: 1}}}];
+}

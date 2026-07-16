@@ -1,0 +1,124 @@
+// This file models the common STAC extensions used to describe imagery assets, bands, pixel values, spatial grids,
+// viewing geometry, and files in Tilebox datasets.
+// EO 2.0: https://github.com/stac-extensions/eo/blob/v2.0.0/README.md
+// Raster 2.0: https://github.com/stac-extensions/raster/blob/v2.0.0/README.md
+// Classification 2.0: https://github.com/stac-extensions/classification/blob/v2.0.0/README.md
+// Projection 2.0: https://github.com/stac-extensions/projection/blob/v2.0.0/README.md
+// View 1.1: https://github.com/stac-extensions/view/blob/v1.1.0/README.md
+// File 2.1: https://github.com/stac-extensions/file/blob/v2.1.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// EOCommonName is the closed EO 2.0 common-name vocabulary.
+enum EOCommonName {
+  EO_COMMON_NAME_UNSPECIFIED = 0;
+  EO_COMMON_NAME_PAN = 1;
+  EO_COMMON_NAME_COASTAL = 2;
+  EO_COMMON_NAME_BLUE = 3;
+  EO_COMMON_NAME_GREEN = 4;
+  EO_COMMON_NAME_GREEN05 = 5;
+  EO_COMMON_NAME_YELLOW = 6;
+  EO_COMMON_NAME_RED = 7;
+  EO_COMMON_NAME_REDEDGE = 8;
+  EO_COMMON_NAME_REDEDGE071 = 9;
+  EO_COMMON_NAME_REDEDGE075 = 10;
+  EO_COMMON_NAME_REDEDGE078 = 11;
+  EO_COMMON_NAME_NIR = 12;
+  EO_COMMON_NAME_NIR08 = 13;
+  EO_COMMON_NAME_NIR09 = 14;
+  EO_COMMON_NAME_CIRRUS = 15;
+  EO_COMMON_NAME_SWIR16 = 16;
+  EO_COMMON_NAME_SWIR22 = 17;
+  EO_COMMON_NAME_LWIR = 18;
+  EO_COMMON_NAME_LWIR11 = 19;
+  EO_COMMON_NAME_LWIR12 = 20;
+}
+
+// EOProperties contains the EO 2.0 fields that are useful at asset or band level.
+// eo:cloud_cover and eo:snow_cover are intentionally omitted: they are typically Item properties and should become
+// dedicated top-level Tilebox dataset fields instead of being embedded in Assets.
+message EOProperties {
+  EOCommonName common_name = 1 [(buf.validate.field).enum.defined_only = true];
+  // Spectral values are expressed in micrometres.
+  double center_wavelength = 2 [features.field_presence = EXPLICIT];
+  double full_width_half_max = 3 [features.field_presence = EXPLICIT];
+  double solar_illumination = 4 [features.field_presence = EXPLICIT];
+}
+
+// RasterSampling contains the closed Raster 2.0 raster:sampling vocabulary.
+enum RasterSampling {
+  RASTER_SAMPLING_UNSPECIFIED = 0;
+  RASTER_SAMPLING_AREA = 1;
+  RASTER_SAMPLING_POINT = 2;
+}
+
+// RasterProperties contains the Raster 2.0 fields used by the supported Items.
+message RasterProperties {
+  RasterSampling sampling = 1 [(buf.validate.field).enum.defined_only = true];
+  double scale = 2 [features.field_presence = EXPLICIT];
+  double offset = 3 [features.field_presence = EXPLICIT];
+  // Spatial resolution is expressed in metres.
+  double spatial_resolution = 4 [features.field_presence = EXPLICIT];
+}
+
+// ClassificationClass contains all Classification 2.0 class fields. Bit-field definitions are intentionally deferred.
+message ClassificationClass {
+  int64 value = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).required = true
+  ];
+  string description = 2 [features.field_presence = EXPLICIT];
+  string name = 3 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9A-Za-z-_]+$"
+  ];
+  string title = 4 [features.field_presence = EXPLICIT];
+  string color_hint = 5 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.pattern = "^[0-9A-Fa-f]{6}$"
+  ];
+  bool nodata = 6 [features.field_presence = EXPLICIT];
+  double percentage = 7 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).double = {
+      gte: 0
+      lte: 100
+    }
+  ];
+  uint64 count = 8 [features.field_presence = EXPLICIT];
+}
+
+// Projection contains the Projection 2.0 fields used by the supported Items.
+message Projection {
+  // Explicit presence distinguishes a missing code from a value. A STAC JSON null is treated as missing.
+  string code = 1 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Four values describe a 2D bbox and six values describe a 3D bbox.
+  repeated double bbox = 2;
+  // Exactly two integers in Y, X order.
+  repeated int64 shape = 3;
+  // Six values describe a 2D affine transform and nine values describe a 3D transform.
+  repeated double transform = 4;
+}
+
+// View contains the View 1.1 fields used by the supported Items.
+message View {
+  double incidence_angle = 1 [features.field_presence = EXPLICIT];
+  double azimuth = 2 [features.field_presence = EXPLICIT];
+}
+
+// File contains the File 2.1 fields used by the supported Items.
+message File {
+  // Decoded binary multihash. STAC JSON represents this as lowercase hexadecimal.
+  bytes checksum = 1 [features.field_presence = EXPLICIT];
+  uint64 size = 2 [features.field_presence = EXPLICIT];
+  string local_path = 3 [features.field_presence = EXPLICIT];
+}

@@ -1,0 +1,54 @@
+// This file models STAC Satellite 1.2 orbit metadata for Tilebox assets and generated dataset fields, from lightweight
+// orbit-state categories through optional timestamped position and velocity vectors.
+// https://github.com/stac-extensions/sat/blob/v1.2.0/README.md
+
+edition = "2023";
+package datasets.stac.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+
+// SatelliteOrbitState contains the closed Satellite 1.2 sat:orbit_state vocabulary. It describes the acquisition's
+// orbit direction or class; it is distinct from the timestamped position and velocity samples in orbit_state_vectors.
+enum SatelliteOrbitState {
+  SATELLITE_ORBIT_STATE_UNSPECIFIED = 0;
+  SATELLITE_ORBIT_STATE_ASCENDING = 1;
+  SATELLITE_ORBIT_STATE_DESCENDING = 2;
+  SATELLITE_ORBIT_STATE_GEOSTATIONARY = 3;
+  SATELLITE_ORBIT_STATE_CROSSING = 4;
+}
+
+// SatelliteOrbitStateVector models one entry in the Satellite 1.2 sat:orbit_state_vectors map.
+message SatelliteOrbitStateVector {
+  google.protobuf.Timestamp datetime = 1 [(buf.validate.field).required = true];
+  // ECI position x/y/z in metres, velocity x/y/z in metres per second, and optional acceleration x/y/z in metres per
+  // second squared. The order matches the STAC JSON array.
+  repeated double values = 2 [(buf.validate.field).repeated = {
+    min_items: 6
+    max_items: 9
+  }];
+}
+
+// SatelliteProperties contains all Satellite 1.2 fields for an Asset. Item-property fields remain flattened in generated
+// dataset schemas and may reuse SatelliteOrbitState and SatelliteOrbitStateVector.
+message SatelliteProperties {
+  string platform_international_designator = 1 [features.field_presence = EXPLICIT];
+  SatelliteOrbitState orbit_state = 2 [(buf.validate.field).enum.defined_only = true];
+  uint64 absolute_orbit = 3 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).uint64.gte = 1
+  ];
+  uint64 relative_orbit = 4 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).uint64.gte = 1
+  ];
+  uint64 orbit_cycle = 5 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).uint64.gte = 1
+  ];
+  repeated SatelliteOrbitStateVector orbit_state_vectors = 6;
+  google.protobuf.Timestamp anx_datetime = 7;
+  string acquisition_station = 8 [features.field_presence = EXPLICIT];
+}
