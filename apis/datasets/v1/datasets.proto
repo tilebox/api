@@ -19,7 +19,7 @@ message CreateDatasetRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 100
   ];
-  // message type of the dataset to create.
+  // Message type of the dataset to create, including per-field source mappings, queryable metadata, and roles.
   DatasetType type = 2 [(buf.validate.field).required = true];
   // short text summary of the dataset to create.
   string summary = 3 [(buf.validate.field).string.max_len = 50000];
@@ -62,7 +62,7 @@ message UpdateDatasetRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 100
   ];
-  // updated type of the dataset.
+  // Updated type of the dataset, including per-field source mappings, queryable metadata, and roles.
   DatasetType type = 3 [features.field_presence = EXPLICIT];
   // updated summary of the dataset.
   string summary = 4 [
