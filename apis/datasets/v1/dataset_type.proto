@@ -15,9 +15,6 @@ option features.field_presence = IMPLICIT;
 // Field is the request representation of a dataset field. It intentionally combines only a protobuf field descriptor
 // with its Tilebox annotation, matching the information represented separately by AnnotatedType.
 message Field {
-  reserved 3;
-  reserved queryable;
-
   // The descriptor contains the name of the field, the type, optional labels (e.g. repeated) and other information.
   // If the type is TYPE_MESSAGE, then the type_name must be a fully qualified name to a well known type, e.g.
   // `datasets.v1.Vec3` or `google.protobuf.Timestamp`.
@@ -63,9 +60,10 @@ message FieldAnnotation {
   // Queryable fields are not necessarily backed by a secondary database index.
   bool queryable = 4;
 
-  // Optional JSON Schema reference to emit as `$ref` when advertising this field as a queryable.
+  // Optional JSON Schema reference for this field when it corresponds to a well known schema.
   // For example, this may reference the canonical STAC extension schema definition for a property.
-  string queryable_json_schema_ref = 5 [features.field_presence = EXPLICIT];
+  // Emitted as `$ref` when advertising this field as a queryable in STAC.
+  string json_schema_ref = 5 [features.field_presence = EXPLICIT];
 
   // Semantic display roles fulfilled by this field.
   repeated FieldRole roles = 6 [
