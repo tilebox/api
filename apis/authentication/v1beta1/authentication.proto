@@ -2,7 +2,7 @@
 
 edition = "2023";
 
-package authentication.v1;
+package authentication.v1beta1;
 
 import "buf/validate/validate.proto";
 import "tilebox/v1/id.proto";
