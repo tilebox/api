@@ -11,5 +11,9 @@ option features.field_presence = IMPLICIT;
 
 // ProcessingSoftware maps each application or library name to its version, tag, commit, or equivalent identifier.
 message ProcessingSoftware {
-  map<string, string> versions = 1 [(buf.validate.field).map = {keys: {string: {min_len: 1}}}];
+  map<string, string> versions = 1 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    }
+  }];
 }

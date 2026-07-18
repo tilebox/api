@@ -10,8 +10,7 @@ option features.field_presence = IMPLICIT;
 message ID {
   bytes uuid = 1 [(buf.validate.field).bytes = {
     len: 16
-    not_in: [
-      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" // Nil UUID
-    ]
+    // Nil UUID.
+    not_in: ["\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"]
   }];
 }
