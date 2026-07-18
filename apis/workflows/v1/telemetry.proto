@@ -3,7 +3,6 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
-import "google/protobuf/timestamp.proto";
 import "opentelemetry/proto/logs/v1/logs.proto";
 import "opentelemetry/proto/trace/v1/trace.proto";
 import "tilebox/v1/id.proto";
