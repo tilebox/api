@@ -1,0 +1,76 @@
+// Public API for resolving account details associated with an authenticated request.
+
+edition = "2023";
+
+package accounts.v1alpha1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// GetAccountDetailsRequest requests details about the account associated with the calling credential.
+message GetAccountDetailsRequest {}
+
+// AccountDetails is a minimal view of the account associated with an authenticated request.
+message AccountDetails {
+  string user_name = 1;
+  string email = 2;
+  string organization_name = 3;
+  string organization_slug = 4;
+  // The authentication method used to authenticate the request.
+  AuthenticationMethod active_authentication_method = 5;
+}
+
+// AuthenticationMethod describes the credential used to authenticate the request.
+message AuthenticationMethod {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "api_key",
+      "jwt"
+    ]
+    required: true
+  };
+  option (buf.validate.message).cel = {
+    id: "authentication_method.type_matches_details"
+    message: "authentication method type must match its details"
+    expression: "(this.type == 1 && has(this.api_key)) || (this.type == 2 && has(this.jwt))"
+  };
+
+  // Type identifies the kind of credential used to authenticate the request.
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_API_KEY = 1;
+    TYPE_JWT = 2;
+  }
+
+  Type type = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  APIKeyDetails api_key = 2;
+  JWTDetails jwt = 3;
+}
+
+// APIKeyDetails describes the API key used for the request without exposing its secret or internal identifier.
+message APIKeyDetails {
+  string name = 1;
+  string description = 2;
+  // The non-secret identifier embedded in the API key.
+  string public_identifier = 3;
+}
+
+// JWTDetails describes the verified JWT without exposing the token or subject and session identifiers.
+message JWTDetails {
+  // The verified issuer. For Clerk-authenticated requests, this is the Clerk issuer URL.
+  string issuer = 1 [(buf.validate.field).string = {
+    min_len: 1
+    uri: true
+  }];
+}
+
+// AccountService exposes information about the account associated with an authenticated request.
+service AccountService {
+  // GetAccountDetails resolves the calling credential to its effective account details.
+  // Requests without valid authentication fail with UNAUTHENTICATED.
+  rpc GetAccountDetails(GetAccountDetailsRequest) returns (AccountDetails) {}
+}
