@@ -1,0 +1,103 @@
+// Public API for reading subscription plan and usage information.
+
+edition = "2023";
+
+package accounts.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+
+// SubscriptionTier identifies the type of subscription an organization has.
+enum SubscriptionTier {
+  SUBSCRIPTION_TIER_UNSPECIFIED = 0;
+  SUBSCRIPTION_TIER_FREE = 1;
+  SUBSCRIPTION_TIER_PAID = 2;
+  SUBSCRIPTION_TIER_CUSTOM = 3;
+}
+
+// BillingCadence is the period in which the base subscription and add-ons are billed.
+enum BillingCadence {
+  BILLING_CADENCE_UNSPECIFIED = 0;
+  BILLING_CADENCE_MONTHLY = 1;
+  BILLING_CADENCE_YEARLY = 2;
+}
+
+// Unit identifies the unit in which a usage metric is measured.
+enum Unit {
+  UNIT_UNSPECIFIED = 0;
+  UNIT_NO_UNIT = 1;
+  UNIT_BYTES = 2;
+  UNIT_SECONDS = 3;
+}
+
+// MetricAggregation describes how the current value of a metric was aggregated.
+enum MetricAggregation {
+  METRIC_AGGREGATION_UNSPECIFIED = 0;
+  METRIC_AGGREGATION_TOTAL = 1;
+  METRIC_AGGREGATION_USAGE_PERIOD = 2;
+}
+
+// BillingPeriod describes the time range and anchor of a billing period.
+message BillingPeriod {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+  google.protobuf.Timestamp anchor = 3;
+}
+
+// Plan describes the active subscription plan of an organization.
+message Plan {
+  SubscriptionTier tier = 1;
+  repeated string add_ons = 2;
+  BillingCadence billing_cadence = 3;
+  BillingPeriod subscription_billing_period = 4;
+  BillingPeriod usage_billing_period = 5;
+  // Set when a canceled subscription remains valid until the given time.
+  google.protobuf.Timestamp valid_until = 6;
+}
+
+// UsageRecord is the value of a metric at a specific time.
+message UsageRecord {
+  google.protobuf.Timestamp timestamp = 1;
+  int64 value = 2;
+  int64 cumulative_value = 3;
+}
+
+// UsageHistory contains the historical values and billing periods of a metric.
+message UsageHistory {
+  repeated BillingPeriod usage_periods = 1;
+  repeated UsageRecord records = 2;
+}
+
+// UsageMetric describes the current and historical consumption of an organization metric.
+message UsageMetric {
+  string key = 1;
+  Unit unit = 2;
+  // Unset when the metric is unlimited.
+  int64 limit = 3 [features.field_presence = EXPLICIT];
+  int64 value = 4;
+  MetricAggregation aggregation = 5;
+  UsageHistory history = 6;
+}
+
+// GetActivePlanRequest requests the active plan of the calling organization.
+message GetActivePlanRequest {}
+
+// GetUsageReportRequest requests current usage and, optionally, historical values.
+message GetUsageReportRequest {
+  // The number of history days to return. Zero omits history.
+  uint64 history_days = 1 [(buf.validate.field).uint64.lte = 365];
+}
+
+// UsageReport contains the usage metrics tracked for an organization.
+message UsageReport {
+  repeated UsageMetric metrics = 1;
+  BillingPeriod usage_period = 2;
+}
+
+// BillingService exposes subscription plan and usage information.
+service BillingService {
+  rpc GetActivePlan(GetActivePlanRequest) returns (Plan) {}
+  rpc GetUsageReport(GetUsageReportRequest) returns (UsageReport) {}
+}
