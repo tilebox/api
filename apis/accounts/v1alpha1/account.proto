@@ -53,10 +53,9 @@ message AuthenticationMethod {
 
 // APIKeyDetails describes the API key used for the request without exposing its secret or internal identifier.
 message APIKeyDetails {
-  string name = 1;
-  string description = 2;
+  string description = 1;
   // The non-secret identifier embedded in the API key.
-  string public_identifier = 3;
+  string public_identifier = 2;
 }
 
 // JWTDetails describes the verified JWT without exposing the token or subject and session identifiers.
