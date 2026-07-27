@@ -6,12 +6,17 @@ edition = "2023";
 package datasets.stac.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
 
 option features.field_presence = IMPLICIT;
 
 // Storage stores the Storage 2.0 storage:schemes registry.
 message Storage {
-  map<string, StorageScheme> schemes = 1;
+  map<string, StorageScheme> schemes = 1 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    }
+  }];
 }
 
 // KnownStorageType is Tilebox's compact dictionary for common open Storage 2.0 type strings.
@@ -36,6 +41,21 @@ message StorageScheme {
     ]
     required: true
   };
+  option (buf.validate.message).cel = {
+    id: "storage_scheme.aws_s3"
+    message: "aws-s3 storage requires the standard platform template and valid bucket and region parameters"
+    expression: "!((has(this.known_type) && this.known_type == 1) || (has(this.custom_type) && this.custom_type == 'aws-s3')) || (this.platform == 'https://{bucket}.s3.{region}.amazonaws.com' && has(this.bucket) && this.bucket.matches('^[a-z0-9][-a-z0-9.]{1,61}[a-z0-9]$') && has(this.region) && this.region.matches('^[a-z0-9-]+$'))"
+  };
+  option (buf.validate.message).cel = {
+    id: "storage_scheme.microsoft_azure"
+    message: "ms-azure storage requires the standard platform template and an account parameter"
+    expression: "!((has(this.known_type) && this.known_type == 3) || (has(this.custom_type) && this.custom_type == 'ms-azure')) || (this.platform == 'https://{account}.blob.core.windows.net' && has(this.account))"
+  };
+  option (buf.validate.message).cel = {
+    id: "storage_scheme.additional_properties"
+    message: "additional storage properties must not redefine typed Storage Scheme Object properties"
+    expression: "!this.additional_properties.exists(key, key in ['type', 'platform', 'title', 'description', 'region', 'requester_pays', 'class', 'bucket', 'account'])"
+  };
 
   // Exactly one compact known type or exact custom Storage 2.0 type string is set.
   KnownStorageType known_type = 1 [
@@ -51,11 +71,35 @@ message StorageScheme {
   ];
 
   // Provider endpoint/API URI or URI template, not an asset href prefix.
-  string platform = 3 [(buf.validate.field).string.min_len = 1];
+  string platform = 3 [(buf.validate.field).string = {
+    min_len: 1
+    pattern: "^[A-Za-z][A-Za-z0-9+.-]*://"
+  }];
   string title = 4 [features.field_presence = EXPLICIT];
   string description = 5 [features.field_presence = EXPLICIT];
   string region = 6 [features.field_presence = EXPLICIT];
   bool requester_pays = 7 [features.field_presence = EXPLICIT];
   // Maps the provider-specific `class` property used by the Copernicus example.
   string storage_class = 8 [features.field_presence = EXPLICIT];
+
+  // The Storage 2.0 extension does not define a canonical property for the bucket or account,
+  // but the STAC community has converged on these names. Tilebox uses them as typed properties to simplify common storage schemes.
+
+  // Bucket variable used by the standard AWS S3 platform template and by provider-specific templates when applicable.
+  string bucket = 9 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Account variable used by the standard Microsoft Azure platform template.
+  string account = 10 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Additional provider properties and URI-template variables. Canonical STAC conversion flattens these entries into
+  // the Storage Scheme Object and must reject collisions with the typed properties above.
+  map<string, google.protobuf.Value> additional_properties = 11 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    }
+  }];
 }
