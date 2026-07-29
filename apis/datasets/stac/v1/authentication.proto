@@ -172,20 +172,6 @@ message AuthenticationParameter {
     (buf.validate.field).required = true
   ];
   string description = 3 [features.field_presence = EXPLICIT];
-  JSONSchema schema = 4;
-}
-
-// JSONSchema represents the object and boolean forms allowed by JSON Schema draft-07. The object form is intentionally
-// kept as Struct: Authentication parameters may use any draft-07 keywords, including nested schemas and custom keywords.
-message JSONSchema {
-  option (buf.validate.message).oneof = {
-    fields: [
-      "object",
-      "boolean"
-    ]
-    required: true
-  };
-
-  google.protobuf.Struct object = 1;
-  bool boolean = 2 [features.field_presence = EXPLICIT];
+  // JSON Schema draft-07 object. Struct preserves arbitrary keywords, nested schemas, and custom keywords.
+  google.protobuf.Struct schema = 4;
 }
