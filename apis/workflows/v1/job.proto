@@ -5,6 +5,7 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
@@ -45,11 +46,73 @@ message GetJobRequest {
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
 }
 
-// GetJobProgressRequest requests a jobs progress. It returns a full job object, but only
-// partially filled with progress indicators, job state and a started_at timestamp.
-message GetJobProgressRequest {
-  // The ID of the job to get progress for.
+// TaskSummary is a compact representation of a task within a job's task tree.
+message TaskSummary {
+  // The ID of the task. Tasks are ordered by this ID within a sibling collection.
+  tilebox.v1.ID id = 1;
+  // The ID of the closest non-virtual ancestor task. It is absent for a root task.
+  tilebox.v1.ID parent_id = 2 [features.field_presence = EXPLICIT];
+  // A human-readable representation of the task.
+  string display = 3;
+  // The current state of the task.
+  TaskState state = 4;
+  // The time the task was submitted.
+  google.protobuf.Timestamp submitted_at = 5;
+  // The time the task started running.
+  google.protobuf.Timestamp started_at = 6;
+  // The time the task stopped running.
+  google.protobuf.Timestamp stopped_at = 7;
+  // The serialized input parameters in the format expected by the task.
+  bytes input = 8 [features.field_presence = EXPLICIT];
+  // The number of times the task has been retried.
+  int64 retry_count = 9;
+  // The maximum number of times the task may be retried.
+  int64 max_retries = 10;
+  // Whether the task has children in the user-visible tree.
+  bool has_children = 11;
+  // The ID of the cluster on which the task is scheduled to run.
+  tilebox.v1.ID cluster_id = 12;
+  // Whether failure of the task is optional, either directly or through an optional ancestor.
+  bool optional = 13;
+}
+
+// JobTaskChildrenPrefetch configures the child pages included with the requested task page.
+message JobTaskChildrenPrefetch {
+  // The maximum number of user-visible children to return for each task in the requested page.
+  int64 limit = 1 [(buf.validate.field).int64 = {
+    gte: 1
+    lte: 100
+  }];
+}
+
+// ListJobTasksRequest requests one page from a job's task tree.
+message ListJobTasksRequest {
+  // The ID of the job whose tasks to list.
   tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+  // The parent whose user-visible children to list. If absent, root tasks are listed.
+  tilebox.v1.ID parent_task_id = 2 [features.field_presence = EXPLICIT];
+  // The pagination parameters for the requested sibling collection.
+  tilebox.v1.Pagination page = 3 [features.field_presence = EXPLICIT];
+  // Optional configuration for prefetching one user-visible child page per returned task.
+  JobTaskChildrenPrefetch prefetch_children = 4 [features.field_presence = EXPLICIT];
+}
+
+// JobTaskPage is one page of a job's root tasks or one parent's user-visible children.
+message JobTaskPage {
+  // The user-visible parent of this sibling collection. It is absent for the root collection.
+  tilebox.v1.ID parent_task_id = 1 [features.field_presence = EXPLICIT];
+  // The tasks in this page, ordered by ascending task ID.
+  repeated TaskSummary tasks = 2;
+  // The pagination parameters for the next page of this sibling collection.
+  tilebox.v1.Pagination next_page = 3 [features.field_presence = EXPLICIT];
+}
+
+// ListJobTasksResponse contains the requested task page and any prefetched child pages.
+message ListJobTasksResponse {
+  // The requested page.
+  JobTaskPage page = 1;
+  // The first user-visible child page for each task in page that has children.
+  repeated JobTaskPage prefetched_child_pages = 2;
 }
 
 // RetryJobRequest requests a retry of a job that has failed.
@@ -178,7 +241,7 @@ message CloneJobRequest {
 service JobService {
   rpc SubmitJob(SubmitJobRequest) returns (Job);
   rpc GetJob(GetJobRequest) returns (Job);
-  rpc GetJobProgress(GetJobProgressRequest) returns (Job);
+  rpc ListJobTasks(ListJobTasksRequest) returns (ListJobTasksResponse);
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
   rpc VisualizeJob(VisualizeJobRequest) returns (Diagram);
