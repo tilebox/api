@@ -25,8 +25,8 @@ message Job {
   google.protobuf.Timestamp submitted_at = 7;
   // The time the job started running. Deprecated, use execution_stats.first_task_started_at instead.
   google.protobuf.Timestamp started_at = 8 [deprecated = true];
-  // A list of tasks of the job.
-  repeated TaskSummary task_summaries = 9;
+  reserved 9;
+  reserved task_summaries;
   // The automation that submitted the job.
   tilebox.v1.ID automation_id = 10;
   // A list of progress indicators for the job.
@@ -88,17 +88,6 @@ enum JobState {
   JOB_STATE_FAILED = 5;
   // The job has been canceled on user request.
   JOB_STATE_CANCELED = 6;
-}
-
-// A summary of a task. Mainly used in the Console.
-message TaskSummary {
-  tilebox.v1.ID id = 1;
-  string display = 2;
-  TaskState state = 3;
-  tilebox.v1.ID parent_id = 4;
-  reserved 5; // depends_on in case we want to add that in the future
-  google.protobuf.Timestamp started_at = 6;
-  google.protobuf.Timestamp stopped_at = 7;
 }
 
 // Progress is an indicator of total and completed work units for a job.
