@@ -17,6 +17,8 @@ message QueryJobLogsRequest {
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
   tilebox.v1.SortDirection sort_direction = 3;
+  // The ID of the task to query logs for. If not specified, logs for the full job are returned.
+  tilebox.v1.ID task_id = 4 [features.field_presence = EXPLICIT];
 }
 
 // QueryLogsInIntervalRequest is the request message for querying logs in a specific time interval.
@@ -48,6 +50,8 @@ message QueryJobSpansRequest {
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to ascending order (oldest entries first).
   tilebox.v1.SortDirection sort_direction = 3;
+  // The ID of the task to query spans for. If not specified, spans for the full job are returned.
+  tilebox.v1.ID task_id = 4 [features.field_presence = EXPLICIT];
 }
 
 // PaginatedSpansData is the response message for paginated log queries. It's a message compatible with LogsData,
