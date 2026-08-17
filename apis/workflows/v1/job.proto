@@ -70,8 +70,8 @@ message TaskSummary {
   int64 max_retries = 10;
   // Whether the task has children in the user-visible tree.
   bool has_children = 11;
-  // The ID of the cluster on which the task is scheduled to run.
-  tilebox.v1.ID cluster_id = 12;
+  // The slug of the cluster on which the task is scheduled to run.
+  string cluster_slug = 12;
   // Whether failure of the task is optional, either directly or through an optional ancestor.
   bool optional = 13;
 }
