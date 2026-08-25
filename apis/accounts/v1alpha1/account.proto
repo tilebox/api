@@ -19,6 +19,10 @@ message AccountDetails {
   string organization_slug = 4;
   // The authentication method used to authenticate the request.
   AuthenticationMethod active_authentication_method = 5;
+  // The canonical Tilebox user ID.
+  string user_id = 6 [(buf.validate.field).string.uuid = true];
+  // The canonical Tilebox organization ID.
+  string organization_id = 7 [(buf.validate.field).string.uuid = true];
 }
 
 // AuthenticationMethod describes the credential used to authenticate the request.
