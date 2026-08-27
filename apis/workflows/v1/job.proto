@@ -5,6 +5,7 @@ edition = "2023";
 package workflows.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
@@ -172,8 +173,14 @@ message QueryFilters {
     required: false
   };
 
-  // Filter by time (or UUIDs encoding a timestamp)
+  // Filters by job submission time. If absent or neither bound is set, submission time is not restricted. If only
+  // start_time is set, it is used as the lower bound. If only end_time is set, it is used as the upper bound. If both
+  // are set, jobs between the two bounds are returned. start_exclusive and end_inclusive control whether each bound is
+  // included.
   tilebox.v1.TimeInterval time_interval = 1;
+  // Filters by job ID. If absent or neither bound is set, job ID is not restricted. If only start_id is set, it is used
+  // as the lower bound. If only end_id is set, it is used as the upper bound. If both are set, jobs between the two
+  // bounds are returned. start_exclusive and end_inclusive control whether each bound is included.
   tilebox.v1.IDInterval id_interval = 2;
 
   // Filter jobs by automations.
@@ -237,6 +244,58 @@ message CloneJobRequest {
   string job_name = 3 [(buf.validate.field).string.min_len = 1];
 }
 
+// GetJobStateCountsRequest requests counts of jobs by their state, optionally filtered by submission time.
+message GetJobStateCountsRequest {
+  // Filters by job submission time. If absent or neither bound is set, submission time is not restricted. If only
+  // start_time is set, it is used as the lower bound. If only end_time is set, it is used as the upper bound. If both
+  // are set, jobs between the two bounds are counted. start_exclusive and end_inclusive control whether each bound is
+  // included.
+  tilebox.v1.TimeInterval time_interval = 1;
+}
+
+// GetJobStateCountsResponse is the response to a GetJobStateCountsRequest, containing counts of jobs by their state.
+message GetJobStateCountsResponse {
+  repeated JobStateCount state_counts = 1;
+  int64 total_jobs = 2;
+}
+
+// JobStateCount is a message that represents the count of jobs for a specific state.
+message JobStateCount {
+  workflows.v1.JobState state = 1;
+  uint64 count = 2;
+}
+
+// GetTaskQueueStatsRequest requests statistics about jobs in the task queue, filtered by submission time.
+message GetTaskQueueStatsRequest {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "job_time_interval",
+      "job_max_age"
+    ]
+    required: false
+  };
+
+  // Filters by job submission time. If absent or neither bound is set, submission time is not restricted. If only
+  // start_time is set, it is used as the lower bound. If only end_time is set, it is used as the upper bound. If both
+  // are set, jobs between the two bounds are considered. start_exclusive and end_inclusive control whether each bound
+  // is included.
+  tilebox.v1.TimeInterval job_time_interval = 1;
+  // Filters to jobs submitted within this duration before the current time.
+  google.protobuf.Duration job_max_age = 2;
+}
+
+// GetTaskQueueStatsResponse represents statistics about jobs and tasks in the task queue.
+message GetTaskQueueStatsResponse {
+  // Jobs in SUBMITTED or STARTED.
+  uint64 waiting_jobs = 1;
+  // Jobs in RUNNING.
+  uint64 running_jobs = 2;
+  // QUEUED tasks across all jobs in SUBMITTED, STARTED, or RUNNING state.
+  uint64 queued_tasks = 3;
+  // The oldest job in the requested interval in SUBMITTED or STARTED state.
+  // Will have the id, name, and submitted_at fields set. If there are no waiting jobs, this field will be absent.
+  Job oldest_waiting_job = 4;
+}
 // A service for interacting with jobs.
 service JobService {
   rpc SubmitJob(SubmitJobRequest) returns (Job);
@@ -248,4 +307,6 @@ service JobService {
   rpc QueryJobs(QueryJobsRequest) returns (QueryJobsResponse);
   rpc GetJobPrototype(GetJobPrototypeRequest) returns (GetJobPrototypeResponse);
   rpc CloneJob(CloneJobRequest) returns (Job);
+  rpc GetJobStateCounts(GetJobStateCountsRequest) returns (GetJobStateCountsResponse);
+  rpc GetTaskQueueStats(GetTaskQueueStatsRequest) returns (GetTaskQueueStatsResponse);
 }

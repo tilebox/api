@@ -87,7 +87,9 @@ message GetActivePlanRequest {}
 // GetUsageReportRequest requests current usage and, optionally, historical values.
 message GetUsageReportRequest {
   // The number of history days to return. Zero omits history.
-  uint64 history_days = 1 [(buf.validate.field).uint64.lte = 365];
+  uint64 history_days = 1 [(buf.validate.field).uint64.lte = 370]; // maximum of a little over a year
+  // The keys of the metrics to include in the report. If empty, all metrics are included.
+  repeated string metric_keys = 2 [(buf.validate.field).repeated.unique = true];
 }
 
 // UsageReport contains the usage metrics tracked for an organization.
