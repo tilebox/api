@@ -8,6 +8,25 @@ import "opentelemetry/proto/trace/v1/trace.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
+// LogSeverityGroup is an enum that groups log severity levels into broader categories for easier filtering and analysis.
+enum LogSeverityGroup {
+  LOG_SEVERITY_GROUP_UNSPECIFIED = 0;
+  LOG_SEVERITY_GROUP_TRACE = 1;
+  LOG_SEVERITY_GROUP_DEBUG = 2;
+  LOG_SEVERITY_GROUP_INFO = 3;
+  LOG_SEVERITY_GROUP_WARNING = 4;
+
+  // Includes OpenTelemetry ERROR and FATAL severities.
+  LOG_SEVERITY_GROUP_ERROR = 5;
+}
+
+// LogQueryFilters define additional query filters for log records, supported by both the QueryJobLogs and QueryLogsInInterval endpoints.
+// These filters can be used to narrow down the log entries returned by the query.
+message LogQueryFilters {
+  // Filter log entries by severity levels. If not specified, all severity levels will be returned.
+  repeated LogSeverityGroup severity_levels = 1 [(buf.validate.field).repeated.unique = true];
+}
+
 // QueryJobLogsRequest is the request message for querying logs of a specific job, in ascending or descending order,
 // with pagination support.
 message QueryJobLogsRequest {
@@ -19,17 +38,21 @@ message QueryJobLogsRequest {
   tilebox.v1.SortDirection sort_direction = 3;
   // The ID of the task to query logs for. If not specified, logs for the full job are returned.
   tilebox.v1.ID task_id = 4 [features.field_presence = EXPLICIT];
+  // Additional filters to apply to the log query.
+  LogQueryFilters filters = 5;
 }
 
 // QueryLogsInIntervalRequest is the request message for querying logs in a specific time interval.
 // It can be used to query all log messages across multiple jobs, and can be filtered by other parameters in the future.
 message QueryLogsInIntervalRequest {
-  // The start time of the interval to query logs for.
+  // The time interval to query logs for.
   tilebox.v1.TimeInterval time_interval = 1;
   // The pagination parameters for this request.
   tilebox.v1.Pagination page = 2 [features.field_presence = EXPLICIT];
   // The direction in which to sort log entries. If not specified, defaults to descending order (newest entries first).
   tilebox.v1.SortDirection sort_direction = 3;
+  // Additional filters to apply to the log query.
+  LogQueryFilters filters = 4;
 }
 
 // PaginatedLogsData is the response message for paginated log queries. It's a message compatible with LogsData,
@@ -39,6 +62,24 @@ message PaginatedLogsData {
   repeated .opentelemetry.proto.logs.v1.ResourceLogs resource_logs = 1;
   // The pagination parameters for the next page.
   tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
+}
+
+// GetLogMessageCountsRequest is the request message for retrieving counts of log messages per severity level within a specified time interval.
+message GetLogMessageCountsRequest {
+  // The time interval to fetch log message counts for.
+  tilebox.v1.TimeInterval time_interval = 1;
+}
+
+// GetLogMessageCountsResponse is the response message for retrieving counts of log messages per severity level within a specified time interval.
+message GetLogMessageCountsResponse {
+  repeated LogSeverityCount counts = 1;
+  int64 total_messages = 2;
+}
+
+// LogSeverityCount is a message that represents the count of log messages for a specific severity level.
+message LogSeverityCount {
+  LogSeverityGroup severity = 1;
+  int64 count = 2;
 }
 
 // QueryJobLogsRequest is the request message for querying logs of a specific job, in ascending or descending order,
@@ -68,6 +109,7 @@ message PaginatedSpansData {
 service TelemetryQueryService {
   rpc QueryJobLogs(QueryJobLogsRequest) returns (PaginatedLogsData);
   rpc QueryLogsInInterval(QueryLogsInIntervalRequest) returns (PaginatedLogsData);
+  rpc GetLogMessageCounts(GetLogMessageCountsRequest) returns (GetLogMessageCountsResponse);
 
   rpc QueryJobSpans(QueryJobSpansRequest) returns (PaginatedSpansData);
 }
