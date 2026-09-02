@@ -26,8 +26,9 @@ message SubmitJobRequest {
   TaskSubmissions tasks = 5;
   // The name of the job.
   string job_name = 2 [(buf.validate.field).string.min_len = 1];
-  // Tracing information for the job. This is used to propagate tracing information to the workers that execute the job.
-  string trace_parent = 3 [(buf.validate.field).string.min_len = 1];
+  // Optional. Tracing information for the job. If omitted, the service generates a new trace parent.
+  // This is used to propagate tracing information to the workers that execute the job.
+  string trace_parent = 3;
   // Optional. The ID of the automation that submits this job.
   tilebox.v1.ID automation_id = 4;
 
