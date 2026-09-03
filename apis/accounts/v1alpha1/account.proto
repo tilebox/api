@@ -5,6 +5,7 @@ edition = "2023";
 package accounts.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "tilebox/v1/id.proto";
 
 option features.field_presence = IMPLICIT;
 
@@ -20,9 +21,9 @@ message AccountDetails {
   // The authentication method used to authenticate the request.
   AuthenticationMethod active_authentication_method = 5;
   // The canonical Tilebox user ID.
-  string user_id = 6 [(buf.validate.field).string.uuid = true];
+  tilebox.v1.ID user_id = 6;
   // The canonical Tilebox organization ID.
-  string organization_id = 7 [(buf.validate.field).string.uuid = true];
+  tilebox.v1.ID organization_id = 7;
 }
 
 // AuthenticationMethod describes the credential used to authenticate the request.
