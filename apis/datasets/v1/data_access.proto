@@ -182,8 +182,10 @@ enum SpatialFilterMode {
   SPATIAL_FILTER_MODE_UNSPECIFIED = 0;
   // Any geometry that intersects the filter geometry is included.
   SPATIAL_FILTER_MODE_INTERSECTS = 1;
-  // Only geometries fully contained within the filter geometry are included.
-  SPATIAL_FILTER_MODE_CONTAINS = 2;
+  // Only datapoint geometries fully contained within the filter geometry are included.
+  SPATIAL_FILTER_MODE_FILTER_CONTAINS_GEOMETRY = 2;
+  // Only datapoint geometries that fully contain the filter geometry are included.
+  SPATIAL_FILTER_MODE_GEOMETRY_CONTAINS_FILTER = 3;
 }
 
 // SpatialCoordinateSystem specifies the coordinate system in which to perform geometry calculations such as
@@ -201,7 +203,7 @@ enum SpatialCoordinateSystem {
 message SpatialFilter {
   // The geometry to filter by.
   Geometry geometry = 1 [(buf.validate.field).required = true];
-  // Whether to filter by intersection or containment.
+  // How to compare datapoint geometries with the filter geometry.
   SpatialFilterMode mode = 2 [(buf.validate.field).enum.defined_only = true];
   // Coordinate system in which to perform geometry calculations.
   SpatialCoordinateSystem coordinate_system = 3 [(buf.validate.field).enum.defined_only = true];
