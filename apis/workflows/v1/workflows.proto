@@ -7,6 +7,7 @@ package workflows.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
+import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
 
 option features.field_presence = IMPLICIT;
@@ -96,11 +97,16 @@ message ListClustersResponse {
 
 // GetWorkflowRequest requests details for a workflow.
 message GetWorkflowRequest {
-  // The slug of the workflow to get details for.
+  // The local slug or namespace-qualified reference of the workflow to get details for.
   string workflow_slug = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
 }
 
@@ -162,12 +168,31 @@ message UnpublishWorkflowReleaseRequest {
 // UnpublishWorkflowReleaseResponse is the response to UnpublishWorkflowReleaseRequest.
 message UnpublishWorkflowReleaseResponse {}
 
-// ListWorkflowsRequest lists all workflows.
-message ListWorkflowsRequest {}
+// ListWorkflowsRequest lists all workflows owned by the authenticated organization.
+message ListWorkflowsRequest {
+  // Pagination in descending creation order; the default and maximum limit is 100.
+  tilebox.v1.Pagination page = 1 [features.field_presence = EXPLICIT];
+}
 
 // ListWorkflowsResponse is the response to ListWorkflowsRequest.
 message ListWorkflowsResponse {
   repeated Workflow workflows = 1;
+  // Pagination parameters for the next page, absent when there are no more workflows.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
+}
+
+// ListPublicWorkflowsRequest lists workflow summaries shared with every organization in named namespaces.
+// Releases are available through GetWorkflow; private sharing grants are not included in this listing.
+message ListPublicWorkflowsRequest {
+  // Pagination in descending creation order; the default and maximum limit is 100.
+  tilebox.v1.Pagination page = 1 [features.field_presence = EXPLICIT];
+}
+
+// ListPublicWorkflowsResponse is the response to ListPublicWorkflowsRequest.
+message ListPublicWorkflowsResponse {
+  repeated Workflow workflows = 1;
+  // Pagination parameters for the next page, absent when there are no more workflows.
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
 }
 
 // CreateWorkflowRequest creates a new workflow, with a name and an optional description.
@@ -181,6 +206,7 @@ message CreateWorkflowRequest {
 // set of tasks.
 message Workflow {
   reserved 1; // reserved for workflow ID, which is currently not exposed in the API but may be added in the future.
+  // The owner-local slug, or namespace:slug for workflows owned by another namespace.
   string slug = 2;
   string name = 3;
   string description = 4;
@@ -188,6 +214,7 @@ message Workflow {
 }
 
 // WorkflowRelease represents an immutable release of a workflow, which includes a set of tasks and an artifact.
+// Cluster deployment manifests omit deleted releases and workflows the caller can no longer read.
 message WorkflowRelease {
   tilebox.v1.ID id = 1;
   Artifact artifact = 2;
@@ -232,10 +259,16 @@ message Path {
 // DeployWorkflowReleaseRequest deploys a workflow release to a set of clusters, making the tasks available for
 // execution on those clusters.
 message DeployWorkflowReleaseRequest {
+  // The local slug or namespace-qualified reference of the workflow to deploy.
   string workflow_slug = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
@@ -253,14 +286,22 @@ message DeployWorkflowReleaseResponse {
   repeated Cluster clusters = 2;
 }
 
-// UndeployWorkflowReleaseRequest undeploys a workflow release from a set of clusters, making them no longer available
-// for execution on those clusters.
+// UndeployWorkflowReleaseRequest undeploys a workflow release from a set of clusters, making it no longer available
+// for execution on those clusters. When release_id is omitted, all releases of the workflow deployed on the target
+// clusters are removed.
 message UndeployWorkflowReleaseRequest {
+  // The local slug or namespace-qualified reference of the workflow to undeploy.
   string workflow_slug = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
+  // The optional ID of the release to undeploy. When omitted, all deployed releases of the workflow are removed.
   tilebox.v1.ID release_id = 2;
   repeated string cluster_slugs = 3 [
     (buf.validate.field).repeated.min_items = 0,
@@ -270,9 +311,9 @@ message UndeployWorkflowReleaseRequest {
   ];
 }
 
-// UndeployWorkflowReleaseResponse is the response to UndeployWorkflowReleaseRequest,
-// containing the undeployed release and the new state of all the clusters it was undeployed from.
+// UndeployWorkflowReleaseResponse is the response to UndeployWorkflowReleaseRequest and contains the new cluster state.
 message UndeployWorkflowReleaseResponse {
+  // The undeployed release when exactly one release was removed. The response may contain only its ID.
   WorkflowRelease release = 1;
   repeated Cluster clusters = 2;
 }
@@ -287,6 +328,7 @@ service WorkflowsService {
 
   rpc CreateWorkflow(CreateWorkflowRequest) returns (Workflow);
   rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse);
+  rpc ListPublicWorkflows(ListPublicWorkflowsRequest) returns (ListPublicWorkflowsResponse);
   rpc GetWorkflow(GetWorkflowRequest) returns (Workflow);
   rpc UpdateWorkflow(UpdateWorkflowRequest) returns (Workflow);
   rpc DeleteWorkflow(DeleteWorkflowRequest) returns (DeleteWorkflowResponse);
