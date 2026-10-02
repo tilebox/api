@@ -10,40 +10,9 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "workflows/v1/core.proto";
+import "workflows/v1/storage_location.proto";
 
 option features.field_presence = IMPLICIT;
-
-// StorageType specifies a kind of storage bucket that we support.
-enum StorageType {
-  STORAGE_TYPE_UNSPECIFIED = 0;
-  // Google Cloud Storage
-  STORAGE_TYPE_GCS = 1;
-  // Amazon Web Services S3
-  STORAGE_TYPE_S3 = 2;
-  // Local filesystem
-  STORAGE_TYPE_FS = 3;
-}
-
-// Storage location is some kind of storage that can contain data files or objects and be used as a trigger source.
-message StorageLocation {
-  // Unique identifier for the storage location
-  tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
-  // A unique identifier for the storage location in the storage system
-  string location = 2 [(buf.validate.field).string = {
-    min_bytes: 1
-    max_bytes: 512
-  }];
-  // The type of the storage location, e.g. GCS, S3, FS
-  StorageType type = 3 [(buf.validate.field).enum = {
-    defined_only: true
-    not_in: [0]
-  }];
-}
-
-// Buckets is a list of storage buckets
-message StorageLocations {
-  repeated StorageLocation locations = 1;
-}
 
 // AutomationPrototype is a task prototype that can result in many submitted tasks. Task submissions are triggered by
 // NRT triggers, such as bucket triggers or cron triggers.
@@ -113,22 +82,6 @@ message Automation {
   bytes args = 2;
 }
 
-// StorageEventType specifies the type of event that triggered the task.
-enum StorageEventType {
-  STORAGE_EVENT_TYPE_UNSPECIFIED = 0;
-  STORAGE_EVENT_TYPE_CREATED = 1;
-}
-
-// TriggeredStorageEvent contains the details of the concrete event that triggered a storage event trigger.
-message TriggeredStorageEvent {
-  // The storage location that triggered the task
-  tilebox.v1.ID storage_location_id = 1;
-  // The type of the storage event, e.g. created
-  StorageEventType type = 2;
-  // The object that triggered the task, e.g. a file name in a directory or object name in a bucket
-  string location = 3;
-}
-
 // TriggeredCronEvent contains the details of a concrete event that triggered a cron trigger.
 message TriggeredCronEvent {
   // The time the cron trigger fired
@@ -147,15 +100,6 @@ message DeleteAutomationRequest {
 // - Bucket triggers, which triggers tasks when an object is uploaded to a storage bucket that matches a glob pattern
 // - Cron triggers, which triggers tasks on a schedule
 service AutomationService {
-  // ListStorageLocations lists all the storage buckets that are available for use as bucket triggers.
-  rpc ListStorageLocations(google.protobuf.Empty) returns (StorageLocations);
-  // GetStorageLocation gets a storage location by its ID.
-  rpc GetStorageLocation(tilebox.v1.ID) returns (StorageLocation);
-  // CreateStorageLocation creates a new storage bucket.
-  rpc CreateStorageLocation(StorageLocation) returns (StorageLocation);
-  // DeleteStorageLocation deletes a storage location.
-  rpc DeleteStorageLocation(tilebox.v1.ID) returns (google.protobuf.Empty);
-
   // ListAutomations lists all the automations that are currently registered in a namespace.
   rpc ListAutomations(google.protobuf.Empty) returns (Automations);
   // GetAutomation gets an automation by its ID.
