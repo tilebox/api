@@ -150,7 +150,7 @@ message UpdateStorageLocationRequest {
 // StorageSubscriptionType identifies the notification delivery provider.
 enum StorageSubscriptionType {
   STORAGE_SUBSCRIPTION_TYPE_UNSPECIFIED = 0;
-  // Amazon SNS delivering notifications from an AWS S3 bucket.
+  // Amazon SNS delivering object notifications from an AWS S3 bucket, or custom SNS message formats configured via message_format.
   STORAGE_SUBSCRIPTION_TYPE_AWS_SNS = 1;
   // Google Cloud Pub/Sub delivering notifications from a GCS bucket.
   STORAGE_SUBSCRIPTION_TYPE_GOOGLE_PUBSUB = 2;
@@ -165,6 +165,13 @@ message AWSSNSStorageSubscription {
     min_bytes: 1
     max_bytes: 2048
   }];
+  // Payload format: s3, earthsearch_stac, or usgs_landsat_c2. If omitted, s3 is assumed.
+  string message_format = 2 [
+    (buf.validate.field).string.in = "",
+    (buf.validate.field).string.in = "s3",
+    (buf.validate.field).string.in = "earthsearch_stac",
+    (buf.validate.field).string.in = "usgs_landsat_c2"
+  ];
 }
 
 // GooglePubSubStorageSubscription identifies the delivery subscription and authenticated push identity.
@@ -228,8 +235,9 @@ message StorageSubscription {
   AzureEventGridStorageSubscription azure_event_grid = 9;
 }
 
-// CreateStorageSubscriptionRequest registers notification delivery for a storage location.
-// Set the configuration corresponding to type. The provider must match the storage location.
+// CreateStorageSubscriptionRequest registers notification delivery for a storage location. It enables the
+// Tilebox webhook endpoint to receive object notifications from the provider. Infrastructure on the provider side
+// must then be configured to send notifications to the returned endpoint.
 message CreateStorageSubscriptionRequest {
   option (buf.validate.message).oneof = {
     fields: [
