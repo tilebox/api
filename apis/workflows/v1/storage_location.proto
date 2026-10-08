@@ -17,16 +17,16 @@ option features.field_presence = IMPLICIT;
 enum StorageType {
   STORAGE_TYPE_UNSPECIFIED = 0;
   // Google Cloud Storage bucket
-  STORAGE_TYPE_GCS_BUCKET = 1;
+  STORAGE_TYPE_GCS = 1;
   // Amazon Web Services S3 bucket
-  STORAGE_TYPE_AWS_S3_BUCKET = 2;
-  // Local filesystem
-  STORAGE_TYPE_FILESYSTEM = 3;
+  STORAGE_TYPE_AWS_S3 = 2;
+  // Local directory
+  STORAGE_TYPE_LOCAL = 3;
   // Azure Blob Storage container
   STORAGE_TYPE_AZURE_BLOB = 4;
 }
 
-// StorageLocation identifies a bucket, container, or filesystem directory whose objects can trigger automations.
+// StorageLocation identifies a bucket, container, or local directory whose objects can trigger automations.
 message StorageLocation {
   // Unique identifier of the storage location.
   tilebox.v1.ID id = 1;
@@ -47,20 +47,20 @@ message StorageLocationReference {
       "aws_s3_bucket",
       "gcs_bucket",
       "azure_blob",
-      "filesystem"
+      "local"
     ]
     required: true
   };
   option (buf.validate.message).cel = {
     id: "storage_location_reference.type"
     message: "The storage type must match the provider reference."
-    expression: "(this.type == 1 && has(this.gcs_bucket)) || (this.type == 2 && has(this.aws_s3_bucket)) || (this.type == 3 && has(this.filesystem)) || (this.type == 4 && has(this.azure_blob))"
+    expression: "(this.type == 1 && has(this.gcs_bucket)) || (this.type == 2 && has(this.aws_s3_bucket)) || (this.type == 3 && has(this.local)) || (this.type == 4 && has(this.azure_blob))"
   };
 
   AWSS3BucketReference aws_s3_bucket = 1;
   GCSBucketReference gcs_bucket = 2;
   AzureBlobReference azure_blob = 3;
-  FilesystemReference filesystem = 4;
+  LocalReference local = 4;
   StorageType type = 5 [(buf.validate.field).enum = {
     defined_only: true
     not_in: [0]
@@ -109,8 +109,8 @@ message AzureBlobReference {
   string region = 3 [(buf.validate.field).string.max_bytes = 128];
 }
 
-// FilesystemReference identifies a directory monitored by a filesystem notifier.
-message FilesystemReference {
+// LocalReference identifies a local directory monitored by the Tilebox CLI.
+message LocalReference {
   string path = 1 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 512
@@ -156,6 +156,13 @@ enum StorageSubscriptionType {
   STORAGE_SUBSCRIPTION_TYPE_GOOGLE_PUBSUB = 2;
   // Azure Event Grid delivering notifications from an Azure Blob Storage container.
   STORAGE_SUBSCRIPTION_TYPE_AZURE_EVENT_GRID = 3;
+  // Storage notifications sent by the Tilebox CLI. Typically for local storage locations. No delivery configuration is required.
+  // POST JSON containing object_path and optional RFC3339 event_time to /v1/storage-notifications/tilebox-cli/<subscription-id>.
+  // object_path is relative to the directory root and uses slash separators, without dot or parent components.
+  // Authenticate with Authorization: Bearer <api-key>; the organization must manage the storage location.
+  // The standalone on-orbit runtime does not require authentication.
+  // Successful deliveries return 204 after jobs and history are committed. Retries can create duplicate jobs.
+  STORAGE_SUBSCRIPTION_TYPE_TILEBOX_CLI = 4;
 }
 
 // AWSSNSStorageSubscription identifies the SNS topic whose signed notifications are accepted.
@@ -213,12 +220,11 @@ message StorageSubscription {
       "google_pubsub",
       "azure_event_grid"
     ]
-    required: true
   };
   option (buf.validate.message).cel = {
     id: "storage_subscription.type"
     message: "The subscription type must match the delivery configuration."
-    expression: "(this.type == 1 && has(this.aws_sns)) || (this.type == 2 && has(this.google_pubsub)) || (this.type == 3 && has(this.azure_event_grid))"
+    expression: "(this.type == 1 && has(this.aws_sns)) || (this.type == 2 && has(this.google_pubsub)) || (this.type == 3 && has(this.azure_event_grid)) || (this.type == 4 && !has(this.aws_sns) && !has(this.google_pubsub) && !has(this.azure_event_grid))"
   };
 
   tilebox.v1.ID id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -227,7 +233,8 @@ message StorageSubscription {
     defined_only: true
     not_in: [0]
   }];
-  // HTTPS endpoint to configure as the provider's notification delivery URL.
+  // Notification delivery URL: HTTPS for the hosted API, HTTP for standalone on-orbit.
+  // With a Unix-socket listener, on-orbit returns a relative path to use over that socket.
   string endpoint = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp created_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
   AWSSNSStorageSubscription aws_sns = 7;
@@ -245,12 +252,11 @@ message CreateStorageSubscriptionRequest {
       "google_pubsub",
       "azure_event_grid"
     ]
-    required: true
   };
   option (buf.validate.message).cel = {
     id: "create_storage_subscription_request.type"
     message: "The subscription type must match the delivery configuration."
-    expression: "(this.type == 1 && has(this.aws_sns)) || (this.type == 2 && has(this.google_pubsub)) || (this.type == 3 && has(this.azure_event_grid))"
+    expression: "(this.type == 1 && has(this.aws_sns)) || (this.type == 2 && has(this.google_pubsub)) || (this.type == 3 && has(this.azure_event_grid)) || (this.type == 4 && !has(this.aws_sns) && !has(this.google_pubsub) && !has(this.azure_event_grid))"
   };
 
   tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
@@ -277,7 +283,7 @@ message StorageSubscriptions {
 message StorageSubscriptionEvent {
   // Unique identifier of the received event.
   tilebox.v1.ID id = 1;
-  // Object key within the bucket or container.
+  // Object key within the bucket or container, or path relative to the local directory root.
   string object_key = 2 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 4096
