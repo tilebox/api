@@ -198,8 +198,18 @@ message ListPublicWorkflowsResponse {
 // CreateWorkflowRequest creates a new workflow, with a name and an optional description.
 // A workflow slug will be generated based on the name.
 message CreateWorkflowRequest {
-  string name = 1 [(buf.validate.field).string.min_len = 1];
-  string description = 2;
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 100
+  ];
+  // short text summary of the workflow to create
+  string summary = 3 [(buf.validate.field).string.max_len = 50000];
+
+  // optional longer description of the workflow to create, in markdown format
+  string description = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string.max_len = 1000000
+  ];
 }
 
 // Workflow represents a logical grouping for a set of tasks. It can have multiple releases, each comprising a different
@@ -209,8 +219,23 @@ message Workflow {
   // The owner-local slug, or namespace:slug for workflows owned by another namespace.
   string slug = 2;
   string name = 3;
+  // short text summary of the workflow
+  string summary = 6;
+  // optional longer description of the workflow, in markdown format
   string description = 4;
   repeated WorkflowRelease releases = 5;
+  // additional presentation metadata for public workflows, to display in the public workflow gallery.
+  WorkflowPresentation presentation = 7;
+}
+
+// WorkflowPresentation is an extended metadata message for a workflow, providing additional presentation properties
+// for a public workflow.
+message WorkflowPresentation {
+  string image_url = 1;
+  string image_alt = 2;
+  repeated string imagery_type = 3; // e.g. "optical", "radar", "hyperspectral", "thermal", "atmosphere"
+  repeated string use_case = 4; // e.g. "mosaic", "change-detection", "object-detection"
+  repeated string dataset_label = 5; // e.g. "Sentinel-2 L2A · 10 m"
 }
 
 // WorkflowRelease represents an immutable release of a workflow, which includes a set of tasks and an artifact.

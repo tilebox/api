@@ -157,11 +157,12 @@ enum StorageSubscriptionType {
   // Azure Event Grid delivering notifications from an Azure Blob Storage container.
   STORAGE_SUBSCRIPTION_TYPE_AZURE_EVENT_GRID = 3;
   // Storage notifications sent by the Tilebox CLI. Typically for local storage locations. No delivery configuration is required.
-  // POST JSON containing object_path and optional RFC3339 event_time to /v1/storage-notifications/tilebox-cli/<subscription-id>.
+  // Use StorageLocationService.NotifyObjectCreated, or POST JSON containing object_path and optional RFC3339 event_time
+  // to /v1/storage-notifications/tilebox-cli/<subscription-id>.
   // object_path is relative to the directory root and uses slash separators, without dot or parent components.
   // Authenticate with Authorization: Bearer <api-key>; the organization must manage the storage location.
   // The standalone on-orbit runtime does not require authentication.
-  // Successful deliveries return 204 after jobs and history are committed. Retries can create duplicate jobs.
+  // Successful HTTP deliveries return 204 after jobs and history are committed. Retries can create duplicate jobs.
   STORAGE_SUBSCRIPTION_TYPE_TILEBOX_CLI = 4;
 }
 
@@ -274,6 +275,20 @@ message ListStorageSubscriptionsRequest {
   tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
 }
 
+// NotifyObjectCreatedRequest sends a file-ready event to a TILEBOX_CLI subscription.
+message NotifyObjectCreatedRequest {
+  // Subscription through which to deliver the event. It must have type TILEBOX_CLI.
+  tilebox.v1.ID storage_subscription_id = 1 [(buf.validate.field).required = true];
+  // Path relative to the location root, using slash separators without dot or parent components. Must not include
+  // a leading slash. For example, "subdir/file.txt" or "file.txt".
+  string object_path = 2 [(buf.validate.field).string = {
+    min_bytes: 1
+    max_bytes: 4096
+  }];
+  // Time the object was observed, absent when unavailable.
+  google.protobuf.Timestamp event_time = 3;
+}
+
 // StorageSubscriptions contains notification subscriptions for a storage location.
 message StorageSubscriptions {
   repeated StorageSubscription subscriptions = 1;
@@ -360,4 +375,8 @@ service StorageLocationService {
   rpc DeleteStorageSubscription(tilebox.v1.ID) returns (google.protobuf.Empty);
   // ListStorageSubscriptionEvents lists received object notifications and the jobs they triggered.
   rpc ListStorageSubscriptionEvents(ListStorageSubscriptionEventsRequest) returns (StorageSubscriptionEvents);
+
+  // NotifyObjectCreated delivers a storage event of a local storage location. Typically called by the Tilebox CLI
+  // during the `tilebox storage-location watch` command. The subscription must be of type TILEBOX_CLI.
+  rpc NotifyObjectCreated(NotifyObjectCreatedRequest) returns (google.protobuf.Empty);
 }
