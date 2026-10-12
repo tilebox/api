@@ -131,6 +131,7 @@ message Band {
   repeated ClassificationClass classes = 8;
   // SAR 1.3.2 permits frequency, center-frequency, and bandwidth metadata on Band Objects.
   SARProperties sar = 9;
+  repeated ClassificationBitField bitfields = 10;
 }
 
 // Asset contains the canonical STAC 1.1 Asset Object fields used by the supported Items. Inheritable metadata applies
@@ -172,6 +173,7 @@ message Asset {
   SARProperties sar = 21;
   SatelliteProperties satellite = 22;
   ProductProperties product = 23;
+  repeated ClassificationBitField bitfields = 24;
 }
 
 // Assets contains the shared profile tables and assets of one STAC Item. Asset locations reference access_profiles by
