@@ -97,8 +97,10 @@ message ListClustersResponse {
 
 // GetWorkflowRequest requests details for a workflow.
 message GetWorkflowRequest {
-  // The local slug or namespace-qualified reference of the workflow to get details for.
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 201,
     (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
@@ -113,10 +115,18 @@ message GetWorkflowRequest {
 // UpdateWorkflowRequest updates an existing workflow, by updating all fields that are set to their new values.
 // If a field is not set, it will not be updated.
 message UpdateWorkflowRequest {
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
   string name = 2 [
     features.field_presence = EXPLICIT,
@@ -136,11 +146,18 @@ message UpdateWorkflowRequest {
 
 // DeleteWorkflowRequest deletes an existing workflow.
 message DeleteWorkflowRequest {
-  // The slug of the workflow to delete.
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
 }
 
@@ -149,10 +166,18 @@ message DeleteWorkflowResponse {}
 
 // PublishWorkflowReleaseRequest publishes a new workflow release artifact, and associates it with a workflow.
 message PublishWorkflowReleaseRequest {
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
   tilebox.v1.ID artifact_id = 2 [(buf.validate.field).required = true];
   ReleaseContent content = 3 [(buf.validate.field).required = true];
@@ -160,11 +185,18 @@ message PublishWorkflowReleaseRequest {
 
 // UnpublishWorkflowReleaseRequest unpublishes a specific workflow release.
 message UnpublishWorkflowReleaseRequest {
-  // The slug of the workflow containing the release to unpublish.
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 100,
-    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+    (buf.validate.field).string.max_len = 201,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
   ];
   // The ID of the release to unpublish.
   tilebox.v1.ID release_id = 2 [(buf.validate.field).required = true];
@@ -200,12 +232,18 @@ message ListPublicWorkflowsResponse {
   tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
 }
 
-// CreateWorkflowRequest creates a new workflow, with a name and an optional description.
-// A workflow slug will be generated based on the name.
+// CreateWorkflowRequest creates a new workflow. The request can include a workflow slug, which will be used as the
+// preferred remote reference for the workflow if it's not in use yet.
 message CreateWorkflowRequest {
   string name = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 100
+  ];
+  // Portable project slug. Empty derives it from the name (slugify).
+  // Used as the preferred remote reference; collisions add a suffix to the reference only.
+  string project_slug = 4 [
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*)?$"
   ];
   // short text summary of the workflow to create
   string summary = 3 [(buf.validate.field).string.max_len = 50000];
@@ -221,8 +259,11 @@ message CreateWorkflowRequest {
 // set of tasks.
 message Workflow {
   reserved 1; // reserved for workflow ID, which is currently not exposed in the API but may be added in the future.
-  // The owner-local slug, or namespace:slug for workflows owned by another namespace.
-  string slug = 2;
+  // Allocated remote address: owner-local, or namespace:reference for another namespace's workflow.
+  // Public listings always qualify references. Pass this value to workflow_reference request fields.
+  string reference = 2;
+  // Portable, non-unique project slug. Use reference to address a remote workflow.
+  string project_slug = 8;
   string name = 3;
   // short text summary of the workflow
   string summary = 6;
@@ -265,7 +306,7 @@ message Artifact {
 // The fingerprint is a hash of the release content.
 message ReleaseContent {
   // A fingerprint of the release content, which is a hash of the task identifiers, files, runner object path,
-  // and command override. Used to determine if two releases have the same content, for idempotent builds.
+  // command override, and build config. Computed by the client for idempotent builds.
   string fingerprint = 1 [(buf.validate.field).string.pattern = "^[a-f0-9]{64}$"];
   // List of task identifiers included in the release artifact.
   repeated TaskIdentifier tasks = 2 [(buf.validate.field).repeated.min_items = 1];
@@ -277,6 +318,19 @@ message ReleaseContent {
   // "uv run python -m tilebox.workflows.runner <runner_object_path>". This allows users to specify a custom command
   // for starting the worker runtime, e.g. to set environment variables or use a different entrypoint.
   repeated string command_override = 5;
+  // Build rules used for this release, relative to its build root.
+  BuildConfig build_config = 6;
+}
+
+// BuildConfig preserves the build rules needed to rebuild a project from a release.
+message BuildConfig {
+  // File patterns to include, relative to the build root.
+  repeated string include = 1;
+  // File patterns to exclude, relative to the build root.
+  repeated string exclude = 2;
+  // Whether to apply Git ignore rules. Omitted means true; preserve presence when reconstructing configuration.
+  // Artifact builders must preserve the applicable ignore files or normalize the rules to remove that dependency.
+  bool use_gitignore = 3 [features.field_presence = EXPLICIT];
 }
 
 // Path represents a file or directory path in the release content. If it is a directory, it can have child paths.
@@ -289,8 +343,10 @@ message Path {
 // DeployWorkflowReleaseRequest deploys a workflow release to a set of clusters, making the tasks available for
 // execution on those clusters.
 message DeployWorkflowReleaseRequest {
-  // The local slug or namespace-qualified reference of the workflow to deploy.
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 201,
     (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
@@ -320,8 +376,10 @@ message DeployWorkflowReleaseResponse {
 // for execution on those clusters. When release_id is omitted, all releases of the workflow deployed on the target
 // clusters are removed.
 message UndeployWorkflowReleaseRequest {
-  // The local slug or namespace-qualified reference of the workflow to undeploy.
-  string workflow_slug = 1 [
+  // The unique workflow reference, potentially suffixed, and potentially namespace-qualified remote reference, which
+  // acts as the unique external identifier for a workflow.
+  // e.g. `my-worklow`, `my-workflow-AGimUihHGGahtT`, or `other-namespace:my-workflow`.
+  string workflow_reference = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 201,
     (buf.validate.field).string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
