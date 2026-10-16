@@ -70,7 +70,15 @@ message GetLogMessageCountsRequest {
   tilebox.v1.TimeInterval time_interval = 1;
 }
 
-// GetLogMessageCountsResponse is the response message for retrieving counts of log messages per severity level within a specified time interval.
+// GetJobLogMessageCountsRequest is the request message for retrieving counts of log messages per severity level for a job.
+message GetJobLogMessageCountsRequest {
+  // The ID of the job to count logs for.
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+  // The ID of the task to count logs for. If not specified, logs for the full job are counted.
+  tilebox.v1.ID task_id = 2 [features.field_presence = EXPLICIT];
+}
+
+// GetLogMessageCountsResponse contains log message counts per severity level and a total across all severities.
 message GetLogMessageCountsResponse {
   repeated LogSeverityCount counts = 1;
   int64 total_messages = 2;
@@ -110,6 +118,7 @@ service TelemetryQueryService {
   rpc QueryJobLogs(QueryJobLogsRequest) returns (PaginatedLogsData);
   rpc QueryLogsInInterval(QueryLogsInIntervalRequest) returns (PaginatedLogsData);
   rpc GetLogMessageCounts(GetLogMessageCountsRequest) returns (GetLogMessageCountsResponse);
+  rpc GetJobLogMessageCounts(GetJobLogMessageCountsRequest) returns (GetLogMessageCountsResponse);
 
   rpc QueryJobSpans(QueryJobSpansRequest) returns (PaginatedSpansData);
 }
