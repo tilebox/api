@@ -143,9 +143,10 @@ enum TaskState {
   TASK_STATE_FAILED_OPTIONAL = 6;
 }
 
-// An identifier for a task.
-message TaskIdentifier {
-  // A unique name of a task (unique within a namespace).
+// Identifies a task implementation before an execution scope is selected.
+// Release definitions and worker discovery use this type. Runners bind it to a workflow or advertise it unscoped.
+message UnboundTaskIdentifier {
+  // The local task name.
   string name = 1 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 256
@@ -157,9 +158,27 @@ message TaskIdentifier {
   }];
 }
 
-// A list of task identifiers.
-message TaskIdentifiers {
-  repeated TaskIdentifier identifiers = 1;
+// A list of task identifiers without execution scope bindings.
+message UnboundTaskIdentifiers {
+  repeated UnboundTaskIdentifier identifiers = 1;
+}
+
+// Identifies a task implementation by name, version and by (optional) workflow scope.
+message TaskIdentifier {
+  // The task name within its workflow scope, or within the unscoped task space.
+  string name = 1 [(buf.validate.field).string = {
+    min_bytes: 1
+    max_bytes: 256
+  }];
+  // Version of the task.
+  string version = 2 [(buf.validate.field).string = {
+    min_bytes: 1
+    pattern: "^v(\\d+)\\.(\\d+)$"
+  }];
+  // The immutable ID of the workflow that scopes this task.
+  // In task submissions and execution messages, omission means unscoped, never inheritance of a parent's scope.
+  // Executable tasks returned by the API carry the resolved scope.
+  tilebox.v1.ID workflow_id = 3 [features.field_presence = EXPLICIT];
 }
 
 // A list of tasks.

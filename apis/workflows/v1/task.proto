@@ -24,7 +24,9 @@ message NextTaskRequest {
 message NextTaskToRun {
   // The cluster that this task runner is running on.
   string cluster_slug = 1 [(buf.validate.field).string.min_len = 1];
-  // The task identifiers that this task runner can run.
+  // The concrete task addresses this runner can execute. Scoped capabilities include workflow_id;
+  // omission advertises only an unscoped address. During the migration/introduction phase of scoped tasks,
+  // runners advertise legacy unscoped aliases as separate entries.
   repeated TaskIdentifier identifiers = 2;
 }
 
@@ -36,12 +38,14 @@ message ComputedTask {
   // If not set, the display message specified upon task submission will be kept.
   string display = 2;
   // A list of sub-tasks that the just computed task spawned.
+  // Workflow scope must be explicitly set in the sub-task identifiers, omission means explicitly unscoped.
+  // Cross-workflow child submissions are also allowed.
   TaskSubmissions sub_tasks = 5;
   // A list of progress updates that the computed task wants to report.
   repeated Progress progress_updates = 4;
 
   // A list of sub-tasks that the just computed task spawned. This field is deprecated and will be removed in the
-  // future. Kept around for backwards compatibility.
+  // future. Kept around for backwards compatibility. Workflow scope follows the same rules as sub_tasks.
   repeated SingleTaskSubmission legacy_sub_tasks = 3 [
     deprecated = true,
     // we support more than that due to grouping and tree spawning, but we rather want to encourage users
