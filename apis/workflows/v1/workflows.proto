@@ -253,12 +253,19 @@ message CreateWorkflowRequest {
     features.field_presence = EXPLICIT,
     (buf.validate.field).string.max_len = 1000000
   ];
+  // Whether managed runners must also advertise unscoped task aliases for this workflow.
+  // Omission defaults to true for older clients. Set false explicitly to create a scoped-only workflow.
+  // Scoped task addresses are available regardless of this value. Needed during the migration to scoped task addresses,
+  // and this flag will be retired once all deployed runners support scoped tasks.
+  bool legacy_task_aliases = 5 [features.field_presence = EXPLICIT];
 }
 
 // Workflow represents a logical grouping for a set of tasks. It can have multiple releases, each comprising a different
 // set of tasks.
 message Workflow {
-  reserved 1; // reserved for workflow ID, which is currently not exposed in the API but may be added in the future.
+  // The immutable workflow ID used to scope task identifiers. Only used to resolve TaskIdentifier.workflow_id for
+  // scoped tasks in the runner. Not used for user-facing addressing, which is always by workflow reference.
+  tilebox.v1.ID id = 1;
   // Allocated remote address: owner-local, or namespace:reference for another namespace's workflow.
   // Public listings always qualify references. Pass this value to workflow_reference request fields.
   string reference = 2;
@@ -272,6 +279,9 @@ message Workflow {
   repeated WorkflowRelease releases = 5;
   // additional presentation metadata for public workflows, to display in the public workflow gallery.
   WorkflowPresentation presentation = 7;
+  // Whether managed runners must advertise unscoped task aliases in addition to workflow-scoped addresses.
+  // Unscoped task aliases must not conflict with other deployed task addresses on the same cluster.
+  bool legacy_task_aliases = 10 [features.field_presence = EXPLICIT];
 }
 
 // WorkflowPresentation is an extended metadata message for a workflow, providing additional presentation properties
@@ -308,8 +318,9 @@ message ReleaseContent {
   // A fingerprint of the release content, which is a hash of the task identifiers, files, runner object path,
   // command override, and build config. Computed by the client for idempotent builds.
   string fingerprint = 1 [(buf.validate.field).string.pattern = "^[a-f0-9]{64}$"];
-  // List of task identifiers included in the release artifact.
-  repeated TaskIdentifier tasks = 2 [(buf.validate.field).repeated.min_items = 1];
+  // Unbound task definitions included in the release artifact, without workflow IDs in both requests and responses.
+  // The managed runner binds them to the owning workflow when advertising capabilities; release content stays unbound.
+  repeated UnboundTaskIdentifier tasks = 2 [(buf.validate.field).repeated.min_items = 1];
   // List of files/directories included in the release artifact.
   repeated Path files = 3;
   // The python module/object path to the runner instance, e.g. "my_module.my_runner:runner".

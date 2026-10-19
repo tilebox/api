@@ -61,7 +61,9 @@ message ExecuteTaskResponse {
 // WorkerService defines the RPC interface between a runner and a a worker runtime that can execute workflow tasks.
 service WorkerService {
   // ListRegisteredTasks is called by the runner to discover the task identifiers that a worker runtime can execute.
-  rpc ListRegisteredTasks(google.protobuf.Empty) returns (workflows.v1.TaskIdentifiers);
+  // These are local task definitions without workflow IDs. The managed runner binds them to its deployed workflow
+  // and adds any enabled legacy aliases when advertising capabilities to the task service.
+  rpc ListRegisteredTasks(google.protobuf.Empty) returns (workflows.v1.UnboundTaskIdentifiers);
 
   // InitializeWorker is called by the runner to initialize a worker runtime with some known metadata about the
   // runner. This allows us to add those metadata to any logs and traces emitted by the worker.
@@ -71,6 +73,11 @@ service WorkerService {
   // task, and then respond with the result of the task execution, which can either be a computed task, or a failed
   // task. If the worker runtime crashes or becomes unreachable during task execution, the runner will treat the task
   // as failed with an unknown error.
+  // The runner preserves the executing task's scope. Workers dispatch by local name/version and resolve child scopes
+  // before returning them, defaulting to the executing task's scope rather than the release's workflow ID.
+  // During migration, the managed runner fills missing child workflow IDs from the executing task's scope for legacy
+  // workers, preserving explicit IDs. An explicit unscoped child of a scoped task cannot be expressed through this
+  // adapter; it must be removed before supporting that override. The task service does not perform inheritance.
   rpc ExecuteTask(workflows.v1.Task) returns (ExecuteTaskResponse) {}
 
   // WatchLogs streams structured runtime logs to the local runner, independently of API log exports and raw

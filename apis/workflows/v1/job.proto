@@ -76,6 +76,9 @@ message TaskSummary {
   string cluster_slug = 12;
   // Whether failure of the task is optional, either directly or through an optional ancestor.
   bool optional = 13;
+  // The remote reference of the task's workflow, owner-local or namespace-qualified as in Workflow.reference.
+  // Absent for unscoped tasks or deleted workflows. Omission does not change the task's stored execution scope.
+  string workflow_reference = 14 [features.field_presence = EXPLICIT];
 }
 
 // JobTaskChildrenPrefetch configures the child pages included with the requested task page.
@@ -198,6 +201,19 @@ message QueryFilters {
 
   // Filter jobs by their clusters (whether they have tasks on certain clusters).
   repeated string cluster_slugs = 7;
+
+  // Filter jobs having at least one task scoped to any of these workflow references.
+  // Empty means no workflow filter. Unscoped tasks never match.
+  repeated string workflow_references = 8 [
+    (buf.validate.field).repeated.items.string.min_len = 1,
+    (buf.validate.field).repeated.items.string.max_len = 201,
+    (buf.validate.field).repeated.items.string.pattern = "^([a-z0-9]+(-[a-z0-9]+)*:)?[A-Za-z0-9-]{1,100}$",
+    (buf.validate.field).repeated.items.cel = {
+      id: "workflow_reference.namespace_length"
+      message: "workflow namespace must be at most 100 characters"
+      expression: "!this.contains(':') || this.split(':')[0].size() <= 100"
+    }
+  ];
 }
 
 // QueryJobsRequest requests a list of jobs.
