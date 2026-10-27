@@ -93,6 +93,16 @@ message DatasetType {
   // for future support. It must not contain the dataset's datapoint message, which the server builds from fields.
   // Include any custom dependencies needed to resolve these definitions. File paths and fully qualified type
   // names must be unique and must not redefine built-in types. Definitions are resolved by name, not list order.
+  //
+  // Clients supply complete enum descriptors, including member names and numbers; the server does not generate
+  // or rewrite them. Each custom enum belongs to one field. Its type name is the field name in PascalCase, and
+  // its member prefix is the field name uppercased followed by an underscore. For product_type, clients declare
+  // ProductType with PRODUCT_TYPE_UNSPECIFIED = 0, PRODUCT_TYPE_L1 = 1, PRODUCT_TYPE_L2SP = 2, etc.
+  // Public values such as L1 must match [A-Z][A-Z0-9_]* and are appended unchanged to the prefix; UNSPECIFIED is
+  // reserved for the zero member and is not a public vocabulary value. Member numbers must be unique and positive
+  // except for that zero member. Existing member names and numbers must be preserved when extending a vocabulary;
+  // reordering values must not renumber them. Clients expose public values by removing the exact prefix once.
+  // Enum fields may be marked queryable without counting toward the queryable string field limit.
   google.protobuf.FileDescriptorSet type_definitions = 3;
 }
 

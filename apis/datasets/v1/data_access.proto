@@ -107,6 +107,8 @@ enum LogicalOperator {
 // Every comparison evaluates to null (unknown) when the field is absent or explicitly null, including NOT_EQUAL.
 // Consequently, both `field != value` and `NOT(field == value)` require the field to be present. To include absent or
 // null fields, explicitly combine the comparison with FieldNullCheck using OR.
+// Enum fields support only EQUAL and NOT_EQUAL. Use a LogicalExpression with OR over equality comparisons to match
+// any of several members. Unknown enum values, numeric enum literals, and ordering comparisons are invalid arguments.
 message FieldComparison {
   // Name of a top-level field in the dataset schema.
   string field_name = 1 [(buf.validate.field).string = {
@@ -119,7 +121,8 @@ message FieldComparison {
     defined_only: true
     not_in: [0]
   }];
-  // Literal value. Its kind must match the field's protobuf descriptor.
+  // Literal value, interpreted using the field's protobuf descriptor. Enum fields accept enum_name for an exact
+  // member name; dataset-local custom enums also accept string_value for a public value as defined by DatasetType.
   FieldQueryValue value = 3 [(buf.validate.field).required = true];
 }
 
@@ -168,10 +171,17 @@ message FieldQueryValue {
   int64 int64_value = 2 [features.field_presence = EXPLICIT];
   uint64 uint64_value = 3 [features.field_presence = EXPLICIT];
   double double_value = 4 [features.field_presence = EXPLICIT];
+  // Literal text for a string field, or a public value for a dataset-local custom enum field.
+  // For an enum field, the server prepends the field name uppercased followed by an underscore and resolves the
+  // resulting member name to its number, e.g. product_type and L1 resolve to PRODUCT_TYPE_L1. Matching is exact and
+  // case-sensitive, with no normalization or fallback to an exact member name. UNSPECIFIED is not a public value;
+  // use enum_name to compare the zero member, or FieldNullCheck to match an absent field.
   string string_value = 5 [features.field_presence = EXPLICIT];
   google.protobuf.Timestamp timestamp_value = 6;
   google.protobuf.Duration duration_value = 7;
-  // Symbolic value from the field's enum descriptor.
+  // Exact, case-sensitive member name from the field's enum descriptor, e.g. PRODUCT_TYPE_L1.
+  // This is neither a short public value nor a fully qualified type name. The server resolves it to its number
+  // using the referenced field's enum descriptor. Use string_value to query a custom enum with a public value.
   string enum_name = 8 [features.field_presence = EXPLICIT];
   bytes bytes_value = 9 [features.field_presence = EXPLICIT];
 }
