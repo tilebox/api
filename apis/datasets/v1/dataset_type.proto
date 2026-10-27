@@ -16,8 +16,9 @@ option features.field_presence = IMPLICIT;
 // with its Tilebox annotation, matching the information represented separately by AnnotatedType.
 message Field {
   // The descriptor contains the name of the field, the type, optional labels (e.g. repeated) and other information.
-  // If the type is TYPE_MESSAGE, then the type_name must be a fully qualified name to a well known type, e.g.
-  // `datasets.v1.Vec3` or `google.protobuf.Timestamp`.
+  // For TYPE_MESSAGE and TYPE_ENUM, type_name references an allowed built-in type or a type declared in
+  // DatasetType.type_definitions. Use a fully qualified name with a leading dot, e.g. `.datasets.v1.Vec3`
+  // or `.google.protobuf.Timestamp`.
   google.protobuf.FieldDescriptorProto descriptor = 1 [(buf.validate.field).required = true];
 
   // Additional documentation, source mapping, and query metadata for the field.
@@ -86,13 +87,21 @@ message DatasetType {
 
   // A list of fields that this dataset consists of.
   repeated Field fields = 2;
+
+  // Dataset-local supporting type definitions referenced by fields through descriptor.type_name.
+  // Initial support is limited to custom enums; the descriptor set can also represent message definitions
+  // for future support. It must not contain the dataset's datapoint message, which the server builds from fields.
+  // Include any custom dependencies needed to resolve these definitions. File paths and fully qualified type
+  // names must be unique and must not redefine built-in types. Definitions are resolved by name, not list order.
+  google.protobuf.FileDescriptorSet type_definitions = 3;
 }
 
 // AnnotatedType is the resolved representation returned on Dataset messages, including GetDataset responses.
 // It combines the generated protobuf descriptors with the corresponding Tilebox field annotations.
 message AnnotatedType {
+  // Descriptors for the dataset's datapoint message and its dataset-local supporting types.
   google.protobuf.FileDescriptorSet descriptor_set = 1;
-  // the url of the type, one of the types defined in the descriptor
+  // Identifies the datapoint message in descriptor_set by name, independent of file or declaration order.
   string type_url = 2;
   reserved 3;
   // Annotations corresponding by index to the FieldDescriptorProto entries of the message selected by type_url.
