@@ -121,8 +121,8 @@ message FieldComparison {
     defined_only: true
     not_in: [0]
   }];
-  // Literal value, interpreted using the field's protobuf descriptor. Enum fields accept enum_name for an exact
-  // member name; dataset-local custom enums also accept string_value for a public value as defined by DatasetType.
+  // Literal value, interpreted using the field's schema. For custom enums, use string_value with a value from
+  // FieldAnnotation.enum_values. Use enum_name to compare an exact protobuf member name.
   FieldQueryValue value = 3 [(buf.validate.field).required = true];
 }
 
@@ -171,17 +171,15 @@ message FieldQueryValue {
   int64 int64_value = 2 [features.field_presence = EXPLICIT];
   uint64 uint64_value = 3 [features.field_presence = EXPLICIT];
   double double_value = 4 [features.field_presence = EXPLICIT];
-  // Literal text for a string field, or a public value for a dataset-local custom enum field.
-  // For an enum field, the server prepends the field name uppercased followed by an underscore and resolves the
-  // resulting member name to its number, e.g. product_type and L1 resolve to PRODUCT_TYPE_L1. Matching is exact and
-  // case-sensitive, with no normalization or fallback to an exact member name. UNSPECIFIED is not a public value;
-  // use enum_name to compare the zero member, or FieldNullCheck to match an absent field.
+  // Text for a string field, or a value from FieldAnnotation.enum_values for a custom enum, e.g. "L1".
+  // The server resolves enum values to their numbers. Matching is case-sensitive; unknown values are rejected.
+  // Generated protobuf names are not accepted here unless they are also declared public values.
   string string_value = 5 [features.field_presence = EXPLICIT];
   google.protobuf.Timestamp timestamp_value = 6;
   google.protobuf.Duration duration_value = 7;
-  // Exact, case-sensitive member name from the field's enum descriptor, e.g. PRODUCT_TYPE_L1.
-  // This is neither a short public value nor a fully qualified type name. The server resolves it to its number
-  // using the referenced field's enum descriptor. Use string_value to query a custom enum with a public value.
+  // Exact, case-sensitive member name from the field's enum descriptor. Prefer string_value for custom enums
+  // so callers do not need to know generated names. This also allows comparing the generated zero member;
+  // use FieldNullCheck instead to match an absent field.
   string enum_name = 8 [features.field_presence = EXPLICIT];
   bytes bytes_value = 9 [features.field_presence = EXPLICIT];
 }

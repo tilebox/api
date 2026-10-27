@@ -16,12 +16,11 @@ option features.field_presence = IMPLICIT;
 // with its Tilebox annotation, matching the information represented separately by AnnotatedType.
 message Field {
   // The descriptor contains the name of the field, the type, optional labels (e.g. repeated) and other information.
-  // For TYPE_MESSAGE and TYPE_ENUM, type_name references an allowed built-in type or a type declared in
-  // DatasetType.type_definitions. Use a fully qualified name with a leading dot, e.g. `.datasets.v1.Vec3`
-  // or `.google.protobuf.Timestamp`.
+  // For built-in message and enum types, set type_name to the full name with a leading dot, e.g. `.datasets.v1.Vec3`.
+  // For a custom enum, set TYPE_ENUM, leave type_name empty, and provide annotation.enum_values.
   google.protobuf.FieldDescriptorProto descriptor = 1 [(buf.validate.field).required = true];
 
-  // Additional documentation, source mapping, and query metadata for the field.
+  // Documentation, source mapping, query metadata, and custom enum values for the field.
   FieldAnnotation annotation = 2;
 }
 
@@ -48,6 +47,12 @@ enum FieldRole {
   FIELD_ROLE_PRIMARY_TITLE = 1;
 }
 
+// EnumValue is one allowed value of a custom enum.
+message EnumValue {
+  // The value users ingest, query, and receive, e.g. "L1".
+  string value = 1 [(buf.validate.field).string.min_len = 1];
+}
+
 // FieldAnnotation contains additional information about a field in a dataset.
 message FieldAnnotation {
   string description = 1;
@@ -59,6 +64,7 @@ message FieldAnnotation {
 
   // Whether the field is projected into query storage and may be used in server-side filter expressions.
   // Queryable fields are not necessarily backed by a secondary database index.
+  // Enum fields do not count toward the queryable string field limit.
   bool queryable = 4;
 
   // Optional JSON Schema reference for this field when it corresponds to a well known schema.
@@ -74,6 +80,16 @@ message FieldAnnotation {
       not_in: [0]
     }
   ];
+
+  // Allowed values for a custom enum field. Values must be unique; leave this empty for other field types.
+  // The server generates the protobuf enum names and numbers. Clients do not need to know its naming rules.
+  // Updates may append values without changing existing numbers. Removing, renaming, or reordering values
+  // is not supported yet.
+  //
+  // In responses, entries match the enum descriptor's members in order, excluding the generated zero member.
+  // Pair each entry with the corresponding member's number to encode and decode datapoints. List positions
+  // are not enum numbers. The zero member is not a public value; missing fields remain distinct from zero.
+  repeated EnumValue enum_values = 7;
 }
 
 // DatasetType is the request representation of a dataset type, used when creating or updating a dataset.
@@ -87,29 +103,12 @@ message DatasetType {
 
   // A list of fields that this dataset consists of.
   repeated Field fields = 2;
-
-  // Dataset-local supporting type definitions referenced by fields through descriptor.type_name.
-  // Initial support is limited to custom enums; the descriptor set can also represent message definitions
-  // for future support. It must not contain the dataset's datapoint message, which the server builds from fields.
-  // Include any custom dependencies needed to resolve these definitions. File paths and fully qualified type
-  // names must be unique and must not redefine built-in types. Definitions are resolved by name, not list order.
-  //
-  // Clients supply complete enum descriptors, including member names and numbers; the server does not generate
-  // or rewrite them. Each custom enum belongs to one field. Its type name is the field name in PascalCase, and
-  // its member prefix is the field name uppercased followed by an underscore. For product_type, clients declare
-  // ProductType with PRODUCT_TYPE_UNSPECIFIED = 0, PRODUCT_TYPE_L1 = 1, PRODUCT_TYPE_L2SP = 2, etc.
-  // Public values such as L1 must match [A-Z][A-Z0-9_]* and are appended unchanged to the prefix; UNSPECIFIED is
-  // reserved for the zero member and is not a public vocabulary value. Member numbers must be unique and positive
-  // except for that zero member. Existing member names and numbers must be preserved when extending a vocabulary;
-  // reordering values must not renumber them. Clients expose public values by removing the exact prefix once.
-  // Enum fields may be marked queryable without counting toward the queryable string field limit.
-  google.protobuf.FileDescriptorSet type_definitions = 3;
 }
 
 // AnnotatedType is the resolved representation returned on Dataset messages, including GetDataset responses.
 // It combines the generated protobuf descriptors with the corresponding Tilebox field annotations.
 message AnnotatedType {
-  // Descriptors for the dataset's datapoint message and its dataset-local supporting types.
+  // Descriptors for the dataset's datapoint message, including its generated enums.
   google.protobuf.FileDescriptorSet descriptor_set = 1;
   // Identifies the datapoint message in descriptor_set by name, independent of file or declaration order.
   string type_url = 2;
