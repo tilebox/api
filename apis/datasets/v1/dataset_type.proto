@@ -81,7 +81,7 @@ message FieldAnnotation {
     }
   ];
 
-  // Allowed values for a custom enum field. Values must be unique; leave this empty for other field types.
+  // Allowed values for a custom enum field. Values must be unique, with at most 100 entries; leave empty for other types.
   // The server generates the protobuf enum names and numbers. Clients do not need to know its naming rules.
   // Updates may append values without changing existing numbers. Removing, renaming, or reordering values
   // is not supported yet.
@@ -89,7 +89,10 @@ message FieldAnnotation {
   // In responses, entries match the enum descriptor's members in order, excluding the generated zero member.
   // Pair each entry with the corresponding member's number to encode and decode datapoints. List positions
   // are not enum numbers. The zero member is not a public value; missing fields remain distinct from zero.
-  repeated EnumValue enum_values = 7;
+  // Repeated enum fields are deduplicated at ingestion, preserving first-occurrence order in the stored payload.
+  // Every element must be a declared nonzero member, so the stored list has at most 100 elements.
+  // Omitted and empty repeated fields are equivalent. Queryable repeated enums support FieldArrayPredicate.
+  repeated EnumValue enum_values = 7 [(buf.validate.field).repeated.max_items = 100];
 }
 
 // DatasetType is the request representation of a dataset type, used when creating or updating a dataset.

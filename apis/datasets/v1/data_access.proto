@@ -55,7 +55,7 @@ message QueryFilters {
   repeated FilterExpression expressions = 4 [(buf.validate.field).repeated.max_items = 64];
 }
 
-// FilterExpression is a typed filter expression compatible with the Basic CQL2 property-to-literal subset.
+// FilterExpression supports Basic CQL2 property-to-literal comparisons and custom enum array predicates.
 // Expressions use three-valued Boolean logic compatible with SQL and CQL2: true, false, and null (unknown). A datapoint
 // matches only when the complete filter expression evaluates to true; false and null results are excluded.
 message FilterExpression {
@@ -63,7 +63,8 @@ message FilterExpression {
     fields: [
       "logical",
       "comparison",
-      "is_null"
+      "is_null",
+      "array_predicate"
     ]
     required: true
   };
@@ -72,6 +73,41 @@ message FilterExpression {
   LogicalExpression logical = 1;
   FieldComparison comparison = 2;
   FieldNullCheck is_null = 3;
+  FieldArrayPredicate array_predicate = 4;
+}
+
+// FieldArrayPredicate tests membership of public values in a queryable repeated custom enum field.
+// Values are case-sensitive and must belong to the field's vocabulary. Order and duplicates do not affect matching.
+// Omitted and empty fields both represent the empty set.
+// CONTAINS_ALL with no values is true; OVERLAPS with no values is false. These predicates never return null.
+// Scalar comparisons and null checks are not supported on repeated fields.
+message FieldArrayPredicate {
+  // Name of a top-level queryable repeated custom enum field.
+  string field_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 100
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+  FieldArrayOperator operator = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Public enum values, not protobuf symbols or numbers. An empty list is allowed.
+  repeated string values = 3 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {min_len: 1}
+    }
+  }];
+}
+
+// FieldArrayOperator selects a CQL2 set-membership operation.
+enum FieldArrayOperator {
+  FIELD_ARRAY_OPERATOR_UNSPECIFIED = 0;
+  // CQL2 A_CONTAINS: the field contains every requested value.
+  FIELD_ARRAY_OPERATOR_CONTAINS_ALL = 1;
+  // CQL2 A_OVERLAPS: the field contains at least one requested value.
+  FIELD_ARRAY_OPERATOR_OVERLAPS = 2;
 }
 
 // LogicalExpression combines nested filter expressions using SQL- and CQL2-compatible three-valued Boolean logic.
@@ -107,8 +143,9 @@ enum LogicalOperator {
 // Every comparison evaluates to null (unknown) when the field is absent or explicitly null, including NOT_EQUAL.
 // Consequently, both `field != value` and `NOT(field == value)` require the field to be present. To include absent or
 // null fields, explicitly combine the comparison with FieldNullCheck using OR.
-// Enum fields support only EQUAL and NOT_EQUAL. Use a LogicalExpression with OR over equality comparisons to match
+// Scalar enum fields support only EQUAL and NOT_EQUAL. Use a LogicalExpression with OR over equality comparisons to match
 // any of several members. Unknown enum values, numeric enum literals, and ordering comparisons are invalid arguments.
+// For repeated custom enums, use FieldArrayPredicate instead.
 message FieldComparison {
   // Name of a top-level field in the dataset schema.
   string field_name = 1 [(buf.validate.field).string = {
