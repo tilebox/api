@@ -83,8 +83,7 @@ message FieldAnnotation {
 
   // Allowed values for a custom enum field. Values must be unique, with at most 100 entries; leave empty for other types.
   // The server generates the protobuf enum names and numbers. Clients do not need to know its naming rules.
-  // Updates may append values without changing existing numbers. Removing, renaming, or reordering values
-  // is not supported yet.
+  // The server validates enum vocabulary changes when updating a dataset.
   //
   // In responses, entries match the enum descriptor's members in order, excluding the generated zero member.
   // Pair each entry with the corresponding member's number to encode and decode datapoints. List positions
