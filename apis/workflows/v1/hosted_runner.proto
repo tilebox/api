@@ -1,0 +1,79 @@
+// Aggregate guest runner lifecycle. This is not a task or host authorization API.
+edition = "2023";
+
+package workflows.v1;
+
+option features.field_presence = IMPLICIT;
+
+// HostedRunnerEnvelope is framed by a four-byte big-endian length (1..65536).
+// Version 1 requires matching assignment/epoch/boot identity and increasing sequence
+// numbers in each direction, preserved across reconnects of the same guest boot.
+message HostedRunnerEnvelope {
+  uint32 protocol_version = 1;
+  string assignment_id = 2;
+  uint64 assignment_epoch = 3;
+  string guest_boot_id = 4;
+  uint64 sequence = 5;
+  // Exactly one guest observation, host command, or guest acknowledgment.
+  oneof payload {
+    HostedRunnerHello hello = 10;
+    HostedRunnerStatus ready = 11;
+    HostedRunnerStatus status = 12;
+    HostedRunnerCommand command = 13;
+    HostedRunnerAcknowledgment acknowledgment = 14;
+    HostedRunnerStatus safe_to_stop = 15;
+  }
+}
+
+// HostedRunnerHello starts every connection; it does not enable intake.
+message HostedRunnerHello {}
+
+// HostedRunnerCommand is idempotent. Drain is irreversible for this guest boot.
+message HostedRunnerCommand {
+  string command_id = 1;
+  HostedRunnerCommandKind kind = 2;
+}
+
+// HostedRunnerCommandKind contains host-to-guest lifecycle commands only.
+enum HostedRunnerCommandKind {
+  HOSTED_RUNNER_COMMAND_KIND_UNSPECIFIED = 0;
+  HOSTED_RUNNER_COMMAND_KIND_START_INTAKE = 1;
+  HOSTED_RUNNER_COMMAND_KIND_DRAIN = 2;
+  HOSTED_RUNNER_COMMAND_KIND_PROBE = 3;
+}
+
+// HostedRunnerAcknowledgment echoes the command ID and its resulting aggregate state.
+// An accepted Drain means intake is closed, not that execution/reporting has finished.
+message HostedRunnerAcknowledgment {
+  string command_id = 1;
+  HostedRunnerCommandKind kind = 2;
+  bool accepted = 3;
+  HostedRunnerStatus status = 4;
+}
+
+// HostedRunnerStatus is local responsiveness, not task progress or assignment renewal.
+// Uncertainty is sticky across polling reset/reconnect; time alone cannot clear it.
+// SafeToStop requires drain and zero claims/tasks/reports/uncertainty.
+message HostedRunnerStatus {
+  bool initialized = 1;
+  bool intake_open = 2;
+  bool draining = 3;
+  bool idle = 4;
+  uint32 active_claims = 5;
+  uint32 active_tasks = 6;
+  uint32 pending_reports = 7;
+  bool claim_uncertain = 8;
+  bool report_uncertain = 9;
+  bool task_lease_problem = 10;
+  HostedRunnerBackendState backend = 11;
+  bool safe_to_stop = 12;
+  // Increments on activity even between heartbeats, so hosts cannot miss an idle reset.
+  uint64 activity_generation = 13;
+}
+
+// HostedRunnerBackendState summarizes the most recent task RPC observations.
+enum HostedRunnerBackendState {
+  HOSTED_RUNNER_BACKEND_STATE_UNSPECIFIED = 0;
+  HOSTED_RUNNER_BACKEND_STATE_REACHABLE = 1;
+  HOSTED_RUNNER_BACKEND_STATE_UNREACHABLE = 2;
+}

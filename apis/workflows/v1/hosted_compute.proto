@@ -1,0 +1,27 @@
+edition = "2023";
+
+package workflows.v1;
+
+option features.field_presence = IMPLICIT;
+
+// HostedComputeConfig selects one isolated guest pool for an existing Cluster.
+message HostedComputeConfig {
+  bool enabled = 1;
+  string region_id = 2;
+  string variant_id = 3;
+  // Logical reservations include Pending, Starting, Ready and Draining guests.
+  // Expired ownership can be replaced before physical cleanup is confirmed.
+  uint32 max_guests = 4;
+}
+
+// HostedComputeStatus distinguishes logical capacity from unconfirmed physical cleanup.
+message HostedComputeStatus {
+  uint64 config_revision = 1;
+  uint32 reserved_guests = 2;
+  uint32 ready_guests = 3;
+  uint32 draining_guests = 4;
+  uint32 cleanup_unconfirmed = 5;
+  bool capacity_failed = 6;
+  uint64 retry_generation = 7;
+  string reason = 8;
+}
