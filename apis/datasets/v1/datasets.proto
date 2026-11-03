@@ -7,6 +7,7 @@ package datasets.v1;
 import "buf/validate/validate.proto";
 import "datasets/v1/core.proto";
 import "datasets/v1/dataset_type.proto";
+import "datasets/v1/presentation.proto";
 import "tilebox/v1/id.proto";
 
 option features.field_presence = IMPLICIT;
@@ -32,6 +33,8 @@ message CreateDatasetRequest {
   ];
   // optional description of the dataset, in markdown format
   string description = 5 [(buf.validate.field).string.max_len = 1000000];
+  // Optional metadata for catalog display and client-side discovery.
+  DatasetPresentation presentation = 6;
 }
 
 // GetDatasetRequest is the request message for the GetDataset RPC method for fetching a single dataset
@@ -81,6 +84,8 @@ message UpdateDatasetRequest {
     features.field_presence = EXPLICIT,
     (buf.validate.field).string.max_len = 1000000
   ];
+  // Replaces the entire presentation when supplied. Omit to leave unchanged; send an empty message to clear it.
+  DatasetPresentation presentation = 7 [features.field_presence = EXPLICIT];
 }
 // DeleteDatasetRequest is used to delete a dataset
 message DeleteDatasetRequest {

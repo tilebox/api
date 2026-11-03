@@ -17,6 +17,7 @@ edition = "2023";
 package datasets.v1;
 
 import "datasets/v1/dataset_type.proto";
+import "datasets/v1/presentation.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 
@@ -86,6 +87,9 @@ message Dataset {
   bool type_editable = 13;
   // list of collections in the dataset
   repeated CollectionInfo collections = 14;
+  // Optional curated metadata for catalog display and client-side search/filtering, returned in list and get responses.
+  // Absence means no presentation metadata has been supplied, not that the dataset lacks these capabilities.
+  DatasetPresentation presentation = 15;
 }
 
 // DatasetPermission is a permission a user (as part of an org) can have on a dataset
@@ -116,4 +120,6 @@ message DatasetGroup {
   string name = 4;
   // optional icon of the group
   string icon = 5;
+  // Optional short description for the group heading in the catalog. Dataset facets are not inherited from groups.
+  string summary = 6;
 }

@@ -49,8 +49,11 @@ enum FieldRole {
 
 // EnumValue is one allowed value of a custom enum.
 message EnumValue {
-  // The value users ingest, query, and receive, e.g. "L1".
-  string value = 1 [(buf.validate.field).string.min_len = 1];
+  // The value users ingest, query, and receive, e.g. "L1", limited to 128 Unicode code points.
+  string value = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
 }
 
 // FieldAnnotation contains additional information about a field in a dataset.
