@@ -1,0 +1,77 @@
+// Curated metadata for dataset display and client-side discovery.
+
+edition = "2023";
+
+package datasets.v1;
+
+import "buf/validate/validate.proto";
+
+option features.field_presence = IMPLICIT;
+
+// DatasetPresentation summarizes the whole dataset, without collection or asset scoping.
+// Filter values mean the dataset contains these capabilities somewhere, not necessarily together in one product.
+// Name, slug, summary, documentation, visibility, and temporal availability remain on Dataset and its collections.
+// Missing metadata means unknown/not specified, not confirmed absence.
+message DatasetPresentation {
+  string image_url = 1;
+  string image_alt = 2;
+  // e.g. "Optical", "Radar", "Hyperspectral", "Atmosphere".
+  DatasetPresentationFacet data_type = 3;
+  // Spectral capabilities, e.g. red, green, blue, red-edge, NIR, SWIR.
+  // A hyperspectral label may summarize wavelengths and channel counts instead of listing the filter values.
+  DatasetPresentationFacet bands = 4;
+  // Delivered products, variables, and quality layers, e.g. NDVI, surface temperature, methane, cloud masks.
+  DatasetPresentationFacet products = 5;
+  DatasetPresentationResolution resolution = 6;
+  // Values: Global, Selected areas, Regional. The label can qualify these, e.g. "Global — Land only".
+  DatasetPresentationFacet geographic_coverage = 7;
+  // Exact science-asset formats, e.g. COG, GeoTIFF, JPEG2000, SAFE, HDF5; excludes preview formats.
+  DatasetPresentationFacet asset_formats = 8;
+  // Source storage access, independent of Tilebox authentication and dataset visibility.
+  // Values: No account required, Free account required, Requester pays, Restricted.
+  // No account required includes freely obtainable tokens, such as Planetary Computer SAS signing.
+  DatasetPresentationFacet storage_access = 9;
+}
+
+// DatasetPresentationFacet combines a compact row summary with independently selectable filter values.
+// Values are both filter labels and exact, case-sensitive identities within the facet. Publishers use consistent
+// spelling across datasets. Clients deduplicate these strings for dropdowns and slugify them only for URLs.
+// Search can include both the row label and values. Bands and products share an All/Any selection
+// across both sets. Other facets match any selected value; combine those filters with AND at dataset level.
+message DatasetPresentationFacet {
+  // Optional row text, e.g. "RGB · NIR" or "Visible + near-infrared · 23 or 31 bands".
+  // When unset or empty, display values joined with " · " in their supplied order.
+  // Nonempty labels must be single-line text without surrounding whitespace or control characters.
+  string label = 1 [(buf.validate.field).string.pattern = "^$|^[^\\p{Z}\\p{Cc}](?:[^\\p{Cc}\\p{Zl}\\p{Zp}]*[^\\p{Z}\\p{Cc}])?$"];
+  // Optional dataset-specific explanation for the row. Plain text, not markup.
+  string tooltip = 2;
+  // e.g. ["Red", "Green", "Blue"] or ["Methane (CH₄)"]. Never derive these from the row label.
+  // Values must be nonempty single-line text without surrounding whitespace or control characters.
+  repeated string values = 3 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      string: {pattern: "^[^\\p{Z}\\p{Cc}](?:[^\\p{Cc}\\p{Zl}\\p{Zp}]*[^\\p{Z}\\p{Cc}])?$"}
+    }
+  }];
+}
+
+// DatasetPresentationResolution uses numeric filter values rather than named options.
+message DatasetPresentationResolution {
+  // Optional row text, e.g. "10–60 m" or "250 m–1 km". Clients may format the values when omitted.
+  // Nonempty labels must be single-line text without surrounding whitespace or control characters.
+  string label = 1 [(buf.validate.field).string.pattern = "^$|^[^\\p{Z}\\p{Cc}](?:[^\\p{Cc}\\p{Zl}\\p{Zp}]*[^\\p{Z}\\p{Cc}])?$"];
+  // Optional explanation of the resolution basis, e.g. nominal GSD versus radar spatial resolution.
+  string tooltip = 2;
+  // Discrete nominal resolutions in metres, not a min/max interval: e.g. [10,20,60] or [250,500,1000].
+  // Clients derive five bins: (0,1), [1,10), [10,100), [100,1000), [1000,+infinity).
+  // Match when any value falls in a selected bin. Do not infer values from the display label.
+  repeated double meters = 3 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      double: {
+        gt: 0
+        finite: true
+      }
+    }
+  }];
+}
