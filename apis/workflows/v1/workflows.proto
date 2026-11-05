@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
+import "workflows/v1/resource.proto";
 
 option features.field_presence = IMPLICIT;
 
@@ -52,6 +53,26 @@ message GetClusterRequest {
     (buf.validate.field).string.max_len = 100,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
   ];
+}
+
+// GetClusterRunnerEnvironmentRequest lets runners poll for deployments and environment changes.
+message GetClusterRunnerEnvironmentRequest {
+  // An active cluster in the caller's namespace. Empty selects the default cluster.
+  string cluster_slug = 1 [
+    (buf.validate.field).string.max_len = 100,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
+  ];
+}
+
+// GetClusterRunnerEnvironmentResponse returns deployments and resolved values from the same snapshot.
+// The caller must be allowed to receive the secrets. Never log or cache this response.
+message GetClusterRunnerEnvironmentResponse {
+  // Includes deployed releases and artifacts, filtered by the same access rules as GetCluster.
+  Cluster cluster = 1;
+  // One entry per name, including full secret values. Cluster-specific values win over all-clusters values.
+  // Values are literal strings, without interpolation. Replace the previous environment, even when this list is empty.
+  // When values change, runners use a new runtime for new tasks and let running tasks finish on the old one.
+  repeated RunnerEnvironmentVariable environment_variables = 2 [debug_redact = true];
 }
 
 // UpdateClusterRequest updates an existing cluster, by updating all fields that are set to their new values.
@@ -421,6 +442,7 @@ message UndeployWorkflowReleaseResponse {
 service WorkflowsService {
   rpc CreateCluster(CreateClusterRequest) returns (Cluster);
   rpc GetCluster(GetClusterRequest) returns (Cluster);
+  rpc GetClusterRunnerEnvironment(GetClusterRunnerEnvironmentRequest) returns (GetClusterRunnerEnvironmentResponse);
   rpc UpdateCluster(UpdateClusterRequest) returns (Cluster);
   rpc DeleteCluster(DeleteClusterRequest) returns (DeleteClusterResponse);
   rpc ListClusters(ListClustersRequest) returns (ListClustersResponse);
