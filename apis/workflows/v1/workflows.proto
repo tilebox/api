@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
 import "workflows/v1/core.proto";
+import "workflows/v1/hosted_compute.proto";
 
 option features.field_presence = IMPLICIT;
 
@@ -27,6 +28,9 @@ message Cluster {
   // The workflows that are currently deployed to this cluster. Each workflow will only contain one release,
   // which is the currently deployed release for that workflow on this cluster.
   repeated Workflow deployed_releases = 5;
+  // Hosted execution is disabled unless explicitly configured.
+  HostedComputeConfig hosted_compute = 7;
+  HostedComputeStatus hosted_compute_status = 8;
 }
 
 // CreateClusterRequest creates a new cluster.
@@ -43,6 +47,7 @@ message CreateClusterRequest {
     (buf.validate.field).string.max_len = 100,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
   ];
+  HostedComputeConfig hosted_compute = 4;
 }
 
 // GetClusterRequest requests details for a cluster.
@@ -71,6 +76,9 @@ message UpdateClusterRequest {
     features.field_presence = EXPLICIT,
     (buf.validate.field).string.max_len = 50000
   ];
+  HostedComputeConfig hosted_compute = 4;
+  // Required when hosted_compute is present; stale writes are rejected.
+  uint64 expected_hosted_config_revision = 5 [features.field_presence = EXPLICIT];
 }
 
 // DeleteClusterRequest deletes an existing cluster.
