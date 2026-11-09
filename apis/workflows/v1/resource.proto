@@ -21,12 +21,12 @@ message ClusterScope {
   // Include all current and future clusters in the namespace.
   bool all_clusters = 1;
   // Share the value only across these clusters.
+  // An empty slug selects the default cluster; an empty list does not.
   // If all selected clusters are deleted, the list stays empty and the value applies nowhere.
   repeated string cluster_slugs = 2 [
     (buf.validate.field).repeated.unique = true,
-    (buf.validate.field).repeated.items.string.min_len = 1,
     (buf.validate.field).repeated.items.string.max_len = 100,
-    (buf.validate.field).repeated.items.string.pattern = "^[A-Za-z0-9-]+$"
+    (buf.validate.field).repeated.items.string.pattern = "^[A-Za-z0-9-]*$"
   ];
 }
 
@@ -39,22 +39,21 @@ message EnvironmentVariable {
   // Hide the full value unless the caller asks to reveal it.
   bool is_secret = 3;
   ClusterScope scope = 4;
-  // Get/List return the full value for non-secrets and authorized reveals. Create/Update omit it.
+  // Get/List return the full value for non-secrets and explicit reveals. Create/Update omit it.
   // A missing value is hidden. Never log values, even non-secrets.
   string value = 5 [
     features.field_presence = EXPLICIT,
     debug_redact = true
   ];
   // Get/List return this preview only for hidden secrets.
-  // Over 20 Unicode code points: first 6 + "***" + last 6. Values of 20 or fewer show "***".
-  // Readers can see these parts of the secret. Never log the preview or pass it to a runner.
+  // For display only. Never log the preview or pass it to a runner.
   // Non-secrets, reveals, and Create/Update responses omit it.
   string secret_preview = 6 [
     features.field_presence = EXPLICIT,
     debug_redact = true
   ];
-  // A note visible to anyone who can read this entry. Do not put credentials here.
-  string note = 7;
+  // A description visible to anyone who can read this entry. Do not put credentials here.
+  string description = 7;
 }
 
 // RunnerEnvironmentVariable is a resolved value for a runner, with the ID of the entry that supplied it.
@@ -70,10 +69,9 @@ message RunnerEnvironmentVariable {
 // Duplicate all-clusters values or overlapping cluster selections for the same name fail with AlreadyExists.
 // The request either succeeds in full or makes no changes.
 message CreateEnvironmentVariableRequest {
-  // Names are case-sensitive. The backend checks reserved names.
-  string name = 1 [(buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"];
+  // An uppercase environment variable name.
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z_][A-Z0-9_]*$"];
   // Must be nonempty. Stored as supplied, without interpolation. Never log it.
-  // The backend checks value sizes and the total size of the resolved environment.
   string value = 2 [
     debug_redact = true,
     (buf.validate.field).string.min_len = 1,
@@ -89,14 +87,14 @@ message CreateEnvironmentVariableRequest {
       expression: "this.all_clusters || this.cluster_slugs.size() > 0"
     }
   ];
-  // Optional note. Readers can see it without revealing the secret.
-  string note = 5 [(buf.validate.field).string.max_len = 50000];
+  // Optional description. Readers can see it without revealing the secret.
+  string description = 5 [(buf.validate.field).string.max_len = 50000];
 }
 
 // GetEnvironmentVariableRequest reads one entry in the namespace.
 message GetEnvironmentVariableRequest {
   tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
-  // Return the full secret if the caller is allowed to reveal it. Do not log or cache the response.
+  // Include the full secret value. Do not log or cache the response.
   bool include_secret = 2;
 }
 
@@ -111,9 +109,9 @@ message ListEnvironmentVariablesRequest {
     (buf.validate.field).string.max_len = 100,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-]*$"
   ];
-  // Return full secrets if the caller is allowed to reveal them. Do not log or cache the response.
+  // Include full secret values. Do not log or cache the response.
   bool include_secrets = 3;
-  // Newest entries first. The default and maximum page size is 100.
+  // Newest entries first.
   tilebox.v1.Pagination page = 4 [features.field_presence = EXPLICIT];
 }
 
@@ -130,14 +128,14 @@ message UpdateEnvironmentVariableRequest {
   option (buf.validate.message).cel = {
     id: "update_environment_variable.fields"
     message: "At least one update field is required."
-    expression: "has(this.name) || has(this.value) || has(this.is_secret) || has(this.scope) || has(this.note)"
+    expression: "has(this.name) || has(this.value) || has(this.is_secret) || has(this.scope) || has(this.description)"
   };
 
   tilebox.v1.ID id = 1 [(buf.validate.field).required = true];
-  // Names are case-sensitive. The backend checks reserved names.
+  // An uppercase environment variable name.
   string name = 2 [
     features.field_presence = EXPLICIT,
-    (buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"
+    (buf.validate.field).string.pattern = "^[A-Z_][A-Z0-9_]*$"
   ];
   // Omit to keep the value. A supplied value must be nonempty. Never log it.
   string value = 3 [
@@ -155,8 +153,8 @@ message UpdateEnvironmentVariableRequest {
     message: "Select all clusters or at least one cluster."
     expression: "this.all_clusters || this.cluster_slugs.size() > 0"
   }];
-  // Omit to keep the note, or send an empty string to clear it. Readers can see it without revealing the secret.
-  string note = 6 [
+  // Omit to keep the description, or send an empty string to clear it. Readers can see it without revealing the secret.
+  string description = 6 [
     features.field_presence = EXPLICIT,
     (buf.validate.field).string.max_len = 50000
   ];
@@ -172,7 +170,7 @@ message DeleteEnvironmentVariableRequest {
 message DeleteEnvironmentVariableResponse {}
 
 // ResourceService manages resources in the caller's namespace, starting with environment variables.
-// Creating, updating, and deleting entries requires organization admin rights. Never log values or secret previews.
+// Never log values or secret previews.
 service ResourceService {
   // Create a new entry. The response omits the value and secret preview.
   rpc CreateEnvironmentVariable(CreateEnvironmentVariableRequest) returns (EnvironmentVariable);

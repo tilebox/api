@@ -47,11 +47,6 @@ message QueryFilters {
   // Additional expressions over fields marked queryable in the dataset schema.
   // All top-level expressions are combined with each other and with the interval and spatial filters using logical AND.
   // Use a nested LogicalExpression for explicit OR, NOT, or grouped boolean logic.
-  // Protovalidate limits each list of expressions to 64 items. Before compiling a query, the server must also enforce:
-  // - at most 256 FilterExpression nodes in total across all top-level and nested expressions;
-  // - a maximum expression depth of 8, where a top-level FilterExpression has depth 1 and each nested operand adds 1;
-  // - every referenced field exists and is marked queryable; and
-  // - every comparison operator and literal kind is valid for the referenced field's descriptor.
   repeated FilterExpression expressions = 4 [(buf.validate.field).repeated.max_items = 64];
 }
 
