@@ -64,14 +64,14 @@ message GetClusterRunnerEnvironmentRequest {
   ];
 }
 
-// GetClusterRunnerEnvironmentResponse returns deployments and resolved values from the same snapshot.
-// The caller must be allowed to receive the secrets. Never log or cache this response.
+// GetClusterRunnerEnvironmentResponse combines cluster deployments with resolved environment values.
+// Deployments and values are read separately and may reflect concurrent changes.
+// Never log or cache this response.
 message GetClusterRunnerEnvironmentResponse {
-  // Includes deployed releases and artifacts, filtered by the same access rules as GetCluster.
+  // Includes deployed releases and artifacts, as in GetCluster.
   Cluster cluster = 1;
   // One entry per name, including full secret values. Cluster-specific values win over all-clusters values.
   // Values are literal strings, without interpolation. Replace the previous environment, even when this list is empty.
-  // When values change, runners use a new runtime for new tasks and let running tasks finish on the old one.
   repeated RunnerEnvironmentVariable environment_variables = 2 [debug_redact = true];
 }
 
@@ -360,8 +360,7 @@ message BuildConfig {
   repeated string include = 1;
   // File patterns to exclude, relative to the build root.
   repeated string exclude = 2;
-  // Whether to apply Git ignore rules. Omitted means true; preserve presence when reconstructing configuration.
-  // Artifact builders must preserve the applicable ignore files or normalize the rules to remove that dependency.
+  // Whether to apply Git ignore rules. Omitted means true.
   bool use_gitignore = 3 [features.field_presence = EXPLICIT];
 }
 
