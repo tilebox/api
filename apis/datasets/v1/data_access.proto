@@ -36,10 +36,15 @@ message QueryFilters {
       "time_interval",
       "datapoint_interval"
     ]
-    required: true
   };
 
+  // The time interval to query data points for. If absent or neither bound is set, the query covers the full available
+  // time range. If only start_time is set, it is used as the lower bound. If only end_time is set, it is used as the
+  // upper bound. start_exclusive and end_inclusive control whether each bound is included, meaning data points
+  // that fall exactly on the same millisecond as the bounds. Only one of time_interval or datapoint_interval can be set.
   tilebox.v1.TimeInterval time_interval = 1;
+  // Instead of filtering by time, the query can filter by a range of data point ids. The same open-ended interval
+  // semantics apply as for time_interval. Only one of time_interval or datapoint_interval can be set.
   tilebox.v1.IDInterval datapoint_interval = 2;
 
   SpatialFilter spatial_extent = 3;
