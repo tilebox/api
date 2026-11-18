@@ -58,7 +58,7 @@ message StorageEventTrigger {
   tilebox.v1.ID id = 1;
   // The storage location to watch for events
   StorageLocation storage_location = 2;
-  // A glob pattern to match objects/files in the storage location
+  // Glob pattern matched against object keys relative to the storage location's root_prefix.
   string glob_pattern = 3 [(buf.validate.field).string.min_len = 1];
 }
 
