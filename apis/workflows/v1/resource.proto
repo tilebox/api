@@ -41,17 +41,11 @@ message EnvironmentVariable {
   ClusterScope scope = 4;
   // Get/List return the full value for non-secrets and explicit reveals. Create/Update omit it.
   // A missing value is hidden. Never log values, even non-secrets.
-  string value = 5 [
-    features.field_presence = EXPLICIT,
-    debug_redact = true
-  ];
+  string value = 5 [features.field_presence = EXPLICIT];
   // Get/List return this preview only for hidden secrets.
   // For display only. Never log the preview or pass it to a runner.
   // Non-secrets, reveals, and Create/Update responses omit it.
-  string secret_preview = 6 [
-    features.field_presence = EXPLICIT,
-    debug_redact = true
-  ];
+  string secret_preview = 6 [features.field_presence = EXPLICIT];
   // A description visible to anyone who can read this entry. Do not put credentials here.
   string description = 7;
 }
@@ -61,7 +55,7 @@ message RunnerEnvironmentVariable {
   tilebox.v1.ID id = 1;
   string name = 2;
   // The full value, including secrets. Never masked or empty. Never log it.
-  string value = 3 [debug_redact = true];
+  string value = 3;
   bool is_secret = 4;
 }
 
@@ -73,7 +67,6 @@ message CreateEnvironmentVariableRequest {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z_][A-Z0-9_]*$"];
   // Must be nonempty. Stored as supplied, without interpolation. Never log it.
   string value = 2 [
-    debug_redact = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.not_contains = "\x00"
   ];
@@ -140,7 +133,6 @@ message UpdateEnvironmentVariableRequest {
   // Omit to keep the value. A supplied value must be nonempty. Never log it.
   string value = 3 [
     features.field_presence = EXPLICIT,
-    debug_redact = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.not_contains = "\x00"
   ];

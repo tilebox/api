@@ -1,4 +1,4 @@
-// The external API for managing storage locations and object notifications.
+// The external API for managing storage locations, object access, and notifications.
 
 edition = "2023";
 
@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "tilebox/v1/id.proto";
 import "tilebox/v1/query.proto";
+import "workflows/v1/storage_access.proto";
 
 option features.field_presence = IMPLICIT;
 
@@ -24,9 +25,15 @@ enum StorageType {
   STORAGE_TYPE_LOCAL = 3;
   // Azure Blob Storage container
   STORAGE_TYPE_AZURE_BLOB = 4;
+  // Cloudflare R2 bucket
+  STORAGE_TYPE_CLOUDFLARE_R2 = 5;
+  // Tigris bucket
+  STORAGE_TYPE_TIGRIS = 6;
+  // Bucket served by another S3-compatible provider
+  STORAGE_TYPE_S3_COMPATIBLE = 7;
 }
 
-// StorageLocation identifies a bucket, container, or local directory whose objects can trigger automations.
+// StorageLocation identifies a bucket, container, or local directory.
 message StorageLocation {
   // Unique identifier of the storage location.
   tilebox.v1.ID id = 1;
@@ -36,25 +43,32 @@ message StorageLocation {
   StorageType type = 3 [deprecated = true];
   // Display name of the storage location.
   string name = 4 [(buf.validate.field).string.max_bytes = 1024];
-  // Immutable provider coordinates of the storage location.
+  // Provider coordinates and optional object access. Responses omit stored credentials.
   StorageLocationReference reference = 5;
 }
 
 // StorageLocationReference identifies an existing storage resource. Set the field corresponding to type.
+// Coordinates and root_prefix are fixed after creation. A supplied reference replaces the complete access configuration.
+// Omitted credential fields keep saved values only when the authentication method is unchanged.
+// Creating or switching to a credential-backed method requires a complete pair. Location responses omit credentials.
+// Absent access disables Tilebox object access; anonymous and client-managed access must be selected explicitly.
 message StorageLocationReference {
   option (buf.validate.message).oneof = {
     fields: [
       "aws_s3_bucket",
       "gcs_bucket",
       "azure_blob",
-      "local"
+      "local",
+      "s3_compatible_bucket",
+      "r2_bucket",
+      "tigris_bucket"
     ]
     required: true
   };
   option (buf.validate.message).cel = {
     id: "storage_location_reference.type"
     message: "The storage type must match the provider reference."
-    expression: "(this.type == 1 && has(this.gcs_bucket)) || (this.type == 2 && has(this.aws_s3_bucket)) || (this.type == 3 && has(this.local)) || (this.type == 4 && has(this.azure_blob))"
+    expression: "(this.type == 1 && has(this.gcs_bucket)) || (this.type == 2 && has(this.aws_s3_bucket)) || (this.type == 3 && has(this.local)) || (this.type == 4 && has(this.azure_blob)) || (this.type == 5 && has(this.r2_bucket)) || (this.type == 6 && has(this.tigris_bucket)) || (this.type == 7 && has(this.s3_compatible_bucket))"
   };
 
   AWSS3BucketReference aws_s3_bucket = 1;
@@ -65,6 +79,82 @@ message StorageLocationReference {
     defined_only: true
     not_in: [0]
   }];
+  S3CompatibleBucketReference s3_compatible_bucket = 6;
+  R2BucketReference r2_bucket = 7;
+  TigrisBucketReference tigris_bucket = 8;
+  // Empty for the resource root; otherwise a relative directory prefix ending in '/'.
+  // Scopes client paths and subscriptions. Ignore notifications outside this prefix and strip it before matching globs.
+  // Delegated credentials enforce the prefix; static and client-managed credentials retain their cloud scope.
+  string root_prefix = 9 [
+    (buf.validate.field).string.max_bytes = 1024,
+    (buf.validate.field).string.not_contains = "\x00",
+    (buf.validate.field).cel = {
+      id: "storage_location_reference.root_prefix"
+      message: "Use an empty root or a relative directory prefix ending in '/' without empty, '.' or '..' components."
+      expression: "this == '' || (this.endsWith('/') && !this.startsWith('/') && !this.contains('//') && this.split('/').all(p, p != '.' && p != '..'))"
+    }
+  ];
+}
+
+// S3CompatibleBucketReference identifies a bucket at an S3 endpoint.
+message S3CompatibleBucketReference {
+  string bucket = 1 [(buf.validate.field).string = {
+    min_bytes: 1
+    max_bytes: 255
+  }];
+  // HTTP or HTTPS origin without credentials, path, query, or fragment.
+  string endpoint = 2 [(buf.validate.field).string = {
+    uri: true
+    max_bytes: 2048
+    pattern: "^https?://[^/?#@]+/?$"
+  }];
+  // Region used for SigV4 signing, independent of the endpoint hostname. Empty or omitted defaults to "auto".
+  string region = 3 [(buf.validate.field).string.max_bytes = 128];
+  bool force_path_style = 4;
+  // Public bucket-root origin for anonymous HTTP reads.
+  string public_endpoint = 5 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string = {
+      uri: true
+      max_bytes: 2048
+      pattern: "^https?://[^/?#@]+/?$"
+    }
+  ];
+  S3CompatibleStorageAccess access = 6;
+}
+
+// R2BucketReference identifies a Cloudflare R2 bucket.
+message R2BucketReference {
+  option (buf.validate.message).cel = {
+    id: "r2_bucket_reference.endpoint"
+    message: "An S3 endpoint is required for delegated, static, or client-managed access."
+    expression: "!has(this.access) || has(this.access.anonymous) || this.endpoint != ''"
+  };
+
+  string bucket = 1 [(buf.validate.field).string = {
+    min_bytes: 1
+    max_bytes: 63
+  }];
+  // Account's R2 S3 endpoint, including its jurisdiction when applicable. Required for S3 access.
+  // Signing region is auto.
+  string endpoint = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      uri: true
+      max_bytes: 2048
+      pattern: "^https://[^/?#@]+/?$"
+    }
+  ];
+  R2StorageAccess access = 3;
+}
+
+// TigrisBucketReference identifies a Tigris bucket using its standard S3 endpoint.
+message TigrisBucketReference {
+  string bucket = 1 [(buf.validate.field).string = {
+    min_bytes: 1
+    max_bytes: 63
+  }];
+  S3CompatibleStorageAccess access = 2;
 }
 
 // AWSS3BucketReference identifies an Amazon Web Services S3 bucket and its region.
@@ -77,6 +167,7 @@ message AWSS3BucketReference {
     min_bytes: 1
     max_bytes: 128
   }];
+  AWSS3StorageAccess access = 3;
 }
 
 // GCSBucketReference identifies a Google Cloud Storage bucket and its project.
@@ -92,6 +183,7 @@ message GCSBucketReference {
   }];
   // Optional bucket location, such as europe-west2, EUR4, or EU. May be a region, dual-region, or multi-region.
   string location = 3 [(buf.validate.field).string.max_bytes = 128];
+  GCSStorageAccess access = 4;
 }
 
 // AzureBlobReference identifies a container in an Azure storage account.
@@ -107,6 +199,7 @@ message AzureBlobReference {
   }];
   // Optional primary region of the storage account, such as westeurope. Containers use their account's region.
   string region = 3 [(buf.validate.field).string.max_bytes = 128];
+  AzureBlobStorageAccess access = 4;
 }
 
 // LocalReference identifies a local directory monitored by the Tilebox CLI.
@@ -129,7 +222,8 @@ message TriggeredJobs {
   repeated TriggeredJob triggered_jobs = 1;
 }
 
-// CreateStorageLocationRequest registers an existing bucket, container, or directory as a storage location.
+// CreateStorageLocationRequest registers an existing bucket, container, or directory.
+// Omit the provider's access field for notification-only use. Cloud permissions can be configured after creation.
 message CreateStorageLocationRequest {
   string name = 1 [(buf.validate.field).string = {
     min_bytes: 1
@@ -138,13 +232,26 @@ message CreateStorageLocationRequest {
   StorageLocationReference reference = 2 [(buf.validate.field).required = true];
 }
 
-// UpdateStorageLocationRequest changes the display name of a storage location.
+// UpdateStorageLocationRequest changes supplied fields and leaves the rest unchanged.
 message UpdateStorageLocationRequest {
+  option (buf.validate.message).cel = {
+    id: "update_storage_location.fields"
+    message: "At least one update field is required."
+    expression: "has(this.name) || has(this.reference)"
+  };
+
   tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
-  string name = 2 [(buf.validate.field).string = {
-    min_bytes: 1
-    max_bytes: 1024
-  }];
+  string name = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string = {
+      min_bytes: 1
+      max_bytes: 1024
+    }
+  ];
+  // Omit to keep the reference. Supply a complete reference with unchanged coordinates and root_prefix to replace access.
+  // Credential fields are patched within the same access method: supplied values replace saved values; omitted fields keep them.
+  // Omitting access within a supplied reference removes access and saved credentials; issued keys may remain valid.
+  StorageLocationReference reference = 3;
 }
 
 // StorageSubscriptionType identifies the notification delivery provider.
@@ -298,7 +405,7 @@ message StorageSubscriptions {
 message StorageSubscriptionEvent {
   // Unique identifier of the received event.
   tilebox.v1.ID id = 1;
-  // Object key within the bucket or container, or path relative to the local directory root.
+  // Object key relative to the location's root_prefix, or to the local directory root when no prefix is set.
   string object_key = 2 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 4096
@@ -331,7 +438,7 @@ message StorageSubscriptionEvents {
   tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
 }
 
-// StorageLocations contains storage locations available for automation triggers.
+// StorageLocations contains locations available to the caller.
 message StorageLocations {
   repeated StorageLocation locations = 1;
 }
@@ -348,22 +455,30 @@ message TriggeredStorageEvent {
   tilebox.v1.ID storage_location_id = 1;
   // The type of the storage event, e.g. created
   StorageEventType type = 2;
-  // The object key/path that triggered the task, not the storage location's provider coordinates.
+  // Object key relative to the location root, with root_prefix removed.
   string location = 3;
 }
 
-// StorageLocationService manages storage locations, notification subscriptions, and received events.
+// StorageLocationService manages storage locations, object access, and notifications.
 service StorageLocationService {
-  // ListStorageLocations lists storage locations available for automation triggers.
+  // ListStorageLocations lists locations available to the caller.
   rpc ListStorageLocations(google.protobuf.Empty) returns (StorageLocations);
   // GetStorageLocation gets a storage location by its ID.
   rpc GetStorageLocation(tilebox.v1.ID) returns (StorageLocation);
-  // CreateStorageLocation registers an existing bucket, container, or directory for automation triggers.
+  // CreateStorageLocation registers an existing resource with optional object access.
   rpc CreateStorageLocation(CreateStorageLocationRequest) returns (StorageLocation);
-  // UpdateStorageLocation changes the display name of a storage location.
+  // UpdateStorageLocation changes the name or access settings. Subscriptions are unchanged.
   rpc UpdateStorageLocation(UpdateStorageLocationRequest) returns (StorageLocation);
   // DeleteStorageLocation removes the location and its subscriptions from Tilebox without deleting cloud resources.
   rpc DeleteStorageLocation(tilebox.v1.ID) returns (google.protobuf.Empty);
+
+  // TestStorageAccess checks listing or reading without writing objects. Requires management permission.
+  // Failures use RPC errors. Client-managed access cannot be tested by Tilebox.
+  rpc TestStorageAccess(TestStorageAccessRequest) returns (google.protobuf.Empty);
+  // CreateStorageAccessSession checks data-access permission and returns static or delegated credentials.
+  // Returns FAILED_PRECONDITION for absent, anonymous, or client-managed access; configure those clients from the location.
+  // Call again to renew. Responses use Cache-Control: no-store; errors omit provider secrets.
+  rpc CreateStorageAccessSession(CreateStorageAccessSessionRequest) returns (StorageAccessSession);
 
   // CreateStorageSubscription registers notification delivery and returns the provider setup values.
   rpc CreateStorageSubscription(CreateStorageSubscriptionRequest) returns (StorageSubscription);
