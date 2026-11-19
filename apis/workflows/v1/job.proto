@@ -120,6 +120,29 @@ message ListJobTasksResponse {
   repeated JobTaskPage prefetched_child_pages = 2;
 }
 
+// JobTaskQueryFilters restricts which tasks match. All supplied filters must match.
+message JobTaskQueryFilters {
+  // Filter tasks by task states. An empty list matches all states.
+  // FAILED does not include FAILED_OPTIONAL.
+  repeated TaskState states = 1;
+  // Filter tasks by display text. Empty means no display filter.
+  string display = 2 [(buf.validate.field).string.max_len = 100];
+}
+
+// QueryJobTasksRequest selects user-visible tasks at any depth in a single job.
+message QueryJobTasksRequest {
+  tilebox.v1.ID job_id = 1 [(buf.validate.field).required = true];
+  JobTaskQueryFilters filters = 2;
+  tilebox.v1.Pagination page = 3 [features.field_presence = EXPLICIT];
+}
+
+// QueryJobTasksResponse contains a flat page of matching tasks across the job.
+message QueryJobTasksResponse {
+  // Matching tasks, ordered by ascending task ID.
+  repeated TaskSummary tasks = 1;
+  tilebox.v1.Pagination next_page = 2 [features.field_presence = EXPLICIT];
+}
+
 // RetryJobRequest requests a retry of a job that has failed.
 message RetryJobRequest {
   // The job to retry.
@@ -318,6 +341,7 @@ service JobService {
   rpc SubmitJob(SubmitJobRequest) returns (Job);
   rpc GetJob(GetJobRequest) returns (Job);
   rpc ListJobTasks(ListJobTasksRequest) returns (ListJobTasksResponse);
+  rpc QueryJobTasks(QueryJobTasksRequest) returns (QueryJobTasksResponse);
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse);
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
   rpc VisualizeJob(VisualizeJobRequest) returns (Diagram);
