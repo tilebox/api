@@ -22,44 +22,57 @@ enum StorageAccessPermission {
 }
 
 // AWSRoleStorageAccess configures AWS role assumption.
+// Require external ID "tilebox:<org-uuid>:<bucket-name>" in the role's trust policy, using the owning organization's UUID.
 message AWSRoleStorageAccess {
   string role_arn = 1 [(buf.validate.field).string = {
     max_bytes: 2048
     pattern: "^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$"
   }];
-  // Grant this Tilebox principal permission to assume the role.
-  string principal_arn = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Tilebox generates this value for the role's trust policy and preserves it on updates.
-  string external_id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Allow delegated sessions to write, delete, and manage multipart uploads. Defaults to read-only.
-  bool allow_write = 4;
+  // Allow read/write sessions. Defaults to read-only.
+  bool allow_write = 2;
 }
 
-// GCSImpersonationStorageAccess configures service-account impersonation.
-message GCSImpersonationStorageAccess {
-  string service_account_email = 1 [(buf.validate.field).string = {
-    email: true
-    max_bytes: 320
-    suffix: ".iam.gserviceaccount.com"
-  }];
-  // Grant this organization's Tilebox identity permission to impersonate the service account.
-  string delegator_service_account_email = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Allow delegated sessions to write and delete objects. Defaults to read-only.
-  bool allow_write = 3;
+// GCSServiceAccountStorageAccess configures temporary GCS access using a service-account key.
+message GCSServiceAccountStorageAccess {
+  // Service-account JSON key. Required on setup; omit on updates to keep it. Never returned.
+  string service_account_key_json = 1 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = INPUT_ONLY,
+    (buf.validate.field).string = {
+      min_bytes: 1
+      max_bytes: 65536
+    }
+  ];
+  // Allow read/write sessions. Defaults to read-only.
+  bool allow_write = 2;
 }
 
-// AzureDelegationStorageAccess configures user-delegation SAS access.
-message AzureDelegationStorageAccess {
-  // Must be linked to the caller's Tilebox organization.
-  string tenant_id = 1 [(buf.validate.field).string.uuid = true];
-  // Grant this Tilebox application access to the storage account and container.
-  string application_client_id = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // Allow delegated sessions to write and delete blobs. Defaults to read-only.
-  bool allow_write = 3;
+// AzureClientSecretCredentials authenticates a service principal with a client secret. All fields are required.
+message AzureClientSecretCredentials {
+  string tenant_id = 1 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (buf.validate.field).string.uuid = true
+  ];
+  string client_id = 2 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (buf.validate.field).string.uuid = true
+  ];
+  string client_secret = 3 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (buf.validate.field).string.min_bytes = 1
+  ];
 }
 
-// AccessKeyCredentials contains an access key ID and secret for S3-compatible authentication.
-// Both fields are required when configuring access; omitted fields preserve saved values on updates to the same method.
+// AzureUserDelegationSASStorageAccess configures user delegation SAS access to Azure Blob Storage.
+message AzureUserDelegationSASStorageAccess {
+  // Required on setup. Omit on updates to keep credentials, or supply all fields to replace them. Never returned.
+  AzureClientSecretCredentials credentials = 1 [(google.api.field_behavior) = INPUT_ONLY];
+  // Allow read/write sessions. Defaults to read-only.
+  bool allow_write = 2;
+}
+
+// AccessKeyCredentials contains an S3-compatible key pair.
+// Both fields are required on setup. Omitted fields keep their saved values on updates.
 message AccessKeyCredentials {
   string access_key_id = 1 [
     features.field_presence = EXPLICIT,
@@ -75,26 +88,14 @@ message AccessKeyCredentials {
 
 // StaticS3CredentialsAccess configures access with a saved S3 key pair.
 message StaticS3CredentialsAccess {
-  // Required when configuring this method. Updates replace supplied key fields. Location responses omit credentials.
   AccessKeyCredentials credentials = 1 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
-// R2DelegationStorageAccess uses saved parent keys to issue temporary R2 credentials.
-message R2DelegationStorageAccess {
-  // Required when configuring this method. Updates replace supplied key fields. Parent keys stay on the backend.
+// R2TemporaryCredentialsStorageAccess configures temporary R2 credentials using a parent key pair.
+message R2TemporaryCredentialsStorageAccess {
   AccessKeyCredentials credentials = 1 [(google.api.field_behavior) = INPUT_ONLY];
-  // Allow delegated sessions to write, delete, and manage multipart uploads. Defaults to read-only.
+  // Allow read/write sessions. Defaults to read-only.
   bool allow_write = 2;
-}
-
-// PublicHTTPStorageAccess configures unsigned reads through a public bucket endpoint.
-message PublicHTTPStorageAccess {
-  // HTTPS bucket-root origin. Supports range reads but no listing.
-  string public_endpoint = 1 [(buf.validate.field).string = {
-    uri: true
-    max_bytes: 2048
-    pattern: "^https://[^/?#@]+/?$"
-  }];
 }
 
 // AWSS3StorageAccess configures access to an AWS bucket.
@@ -123,7 +124,7 @@ message GCSStorageAccess {
     fields: [
       "anonymous",
       "client_managed",
-      "gcs_impersonation",
+      "gcs_service_account",
       "static_s3"
     ]
     required: true
@@ -131,7 +132,7 @@ message GCSStorageAccess {
 
   google.protobuf.Empty anonymous = 1;
   google.protobuf.Empty client_managed = 2;
-  GCSImpersonationStorageAccess gcs_impersonation = 3;
+  GCSServiceAccountStorageAccess gcs_service_account = 3;
   StaticS3CredentialsAccess static_s3 = 4;
 }
 
@@ -141,35 +142,47 @@ message AzureBlobStorageAccess {
     fields: [
       "anonymous",
       "client_managed",
-      "azure_delegation"
+      "azure_user_delegation_sas"
     ]
     required: true
   };
 
   google.protobuf.Empty anonymous = 1;
   google.protobuf.Empty client_managed = 2;
-  AzureDelegationStorageAccess azure_delegation = 3;
+  AzureUserDelegationSASStorageAccess azure_user_delegation_sas = 3;
 }
 
 // R2StorageAccess configures access to a Cloudflare R2 bucket.
 message R2StorageAccess {
   option (buf.validate.message).oneof = {
     fields: [
-      "anonymous",
       "client_managed",
-      "r2_delegation",
+      "r2_temporary_credentials",
       "static_s3"
     ]
     required: true
   };
 
-  PublicHTTPStorageAccess anonymous = 1;
-  google.protobuf.Empty client_managed = 2;
-  R2DelegationStorageAccess r2_delegation = 3;
-  StaticS3CredentialsAccess static_s3 = 4;
+  google.protobuf.Empty client_managed = 1;
+  R2TemporaryCredentialsStorageAccess r2_temporary_credentials = 2;
+  StaticS3CredentialsAccess static_s3 = 3;
 }
 
-// S3CompatibleStorageAccess configures access to Tigris or another S3-compatible provider.
+// TigrisStorageAccess configures authenticated S3 access to a Tigris bucket.
+message TigrisStorageAccess {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "client_managed",
+      "static_s3"
+    ]
+    required: true
+  };
+
+  google.protobuf.Empty client_managed = 1;
+  StaticS3CredentialsAccess static_s3 = 2;
+}
+
+// S3CompatibleStorageAccess configures access through a provider's S3 API.
 message S3CompatibleStorageAccess {
   option (buf.validate.message).oneof = {
     fields: [
@@ -185,7 +198,7 @@ message S3CompatibleStorageAccess {
   StaticS3CredentialsAccess static_s3 = 3;
 }
 
-// StorageS3Connection contains client settings and static or temporary credentials for any S3-compatible provider.
+// StorageS3Connection contains S3-compatible client settings and credentials.
 message StorageS3Connection {
   string endpoint = 1;
   string bucket = 2;
@@ -200,13 +213,13 @@ message StorageS3Connection {
 // StorageGCSConnection contains native GCS client settings and credentials.
 message StorageGCSConnection {
   string bucket = 1;
-  string bearer_token = 2;
+  string access_token = 2;
 }
 
 // StorageAzureConnection contains Azure Blob client settings and credentials.
 message StorageAzureConnection {
   string endpoint = 1;
-  string account = 2;
+  string account_name = 2;
   string container = 3;
   // SAS query string without a leading '?'.
   string sas_token = 4;
@@ -215,16 +228,14 @@ message StorageAzureConnection {
 // CreateStorageAccessSessionRequest fetches or renews credentials for a location.
 message CreateStorageAccessSessionRequest {
   tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
-  // Delegated READ_WRITE requires allow_write. READ always issues read-only delegated credentials.
-  // Static credentials retain their cloud permissions, regardless of the requested access.
+  // Delegated writes require allow_write. Static keys retain their existing permissions.
   StorageAccessPermission access = 2 [(buf.validate.field).enum = {
     defined_only: true
     not_in: [0]
   }];
 }
 
-// StorageAccessSession contains connection settings and Tilebox-supplied credentials for a native storage client.
-// Keep credentials out of logs and persistent storage.
+// StorageAccessSession contains client settings and credentials for a bucket or container.
 message StorageAccessSession {
   option (buf.validate.message).oneof = {
     fields: [
@@ -235,31 +246,9 @@ message StorageAccessSession {
     required: true
   };
 
-  // Client paths are relative to this root. Reopen the store if the root or target changes on renewal.
-  string root_prefix = 1;
-  // Provider expiration for delegated credentials. Call CreateStorageAccessSession again to renew.
-  // Absent for static credentials; reopen the store to pick up a rotated key.
-  google.protobuf.Timestamp expires_at = 2;
-  StorageS3Connection s3 = 3;
-  StorageGCSConnection gcs = 4;
-  StorageAzureConnection azure = 5;
-}
-
-// TestStorageAccessRequest tests a scoped listing, or a small range read when object_key is supplied.
-message TestStorageAccessRequest {
-  tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
-  // Existing object relative to root_prefix. Required for public HTTP endpoints without listing.
-  string object_key = 2 [
-    features.field_presence = EXPLICIT,
-    (buf.validate.field).string = {
-      min_bytes: 1
-      max_bytes: 4096
-      not_contains: "\x00"
-    },
-    (buf.validate.field).cel = {
-      id: "storage_access_test.object_key"
-      message: "Use a relative object key without empty, '.' or '..' components."
-      expression: "this.split('/').all(p, p != '' && p != '.' && p != '..')"
-    }
-  ];
+  // Credential expiration. Request a new session to renew. Absent for static credentials.
+  google.protobuf.Timestamp expires_at = 1;
+  StorageS3Connection s3 = 2;
+  StorageGCSConnection gcs = 3;
+  StorageAzureConnection azure = 4;
 }
