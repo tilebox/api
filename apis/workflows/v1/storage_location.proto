@@ -47,11 +47,8 @@ message StorageLocation {
   StorageLocationReference reference = 5;
 }
 
-// StorageLocationReference identifies an existing storage resource. Set the field corresponding to type.
-// Coordinates and root_prefix are fixed after creation. A supplied reference replaces the complete access configuration.
-// Omitted credential fields keep saved values only when the authentication method is unchanged.
-// Creating or switching to a credential-backed method requires a complete pair. Location responses omit credentials.
-// Absent access disables Tilebox object access; anonymous and client-managed access must be selected explicitly.
+// StorageLocationReference identifies a resource and its access settings. Set the field matching type.
+// Resource coordinates cannot change after creation. Omit access for notification-only use.
 message StorageLocationReference {
   option (buf.validate.message).oneof = {
     fields: [
@@ -82,18 +79,6 @@ message StorageLocationReference {
   S3CompatibleBucketReference s3_compatible_bucket = 6;
   R2BucketReference r2_bucket = 7;
   TigrisBucketReference tigris_bucket = 8;
-  // Empty for the resource root; otherwise a relative directory prefix ending in '/'.
-  // Scopes client paths and subscriptions. Ignore notifications outside this prefix and strip it before matching globs.
-  // Delegated credentials enforce the prefix; static and client-managed credentials retain their cloud scope.
-  string root_prefix = 9 [
-    (buf.validate.field).string.max_bytes = 1024,
-    (buf.validate.field).string.not_contains = "\x00",
-    (buf.validate.field).cel = {
-      id: "storage_location_reference.root_prefix"
-      message: "Use an empty root or a relative directory prefix ending in '/' without empty, '.' or '..' components."
-      expression: "this == '' || (this.endsWith('/') && !this.startsWith('/') && !this.contains('//') && this.split('/').all(p, p != '.' && p != '..'))"
-    }
-  ];
 }
 
 // S3CompatibleBucketReference identifies a bucket at an S3 endpoint.
@@ -108,43 +93,24 @@ message S3CompatibleBucketReference {
     max_bytes: 2048
     pattern: "^https?://[^/?#@]+/?$"
   }];
-  // Region used for SigV4 signing, independent of the endpoint hostname. Empty or omitted defaults to "auto".
+  // Signing region. Defaults to "auto".
   string region = 3 [(buf.validate.field).string.max_bytes = 128];
   bool force_path_style = 4;
-  // Public bucket-root origin for anonymous HTTP reads.
-  string public_endpoint = 5 [
-    features.field_presence = EXPLICIT,
-    (buf.validate.field).string = {
-      uri: true
-      max_bytes: 2048
-      pattern: "^https?://[^/?#@]+/?$"
-    }
-  ];
-  S3CompatibleStorageAccess access = 6;
+  S3CompatibleStorageAccess access = 5;
 }
 
 // R2BucketReference identifies a Cloudflare R2 bucket.
 message R2BucketReference {
-  option (buf.validate.message).cel = {
-    id: "r2_bucket_reference.endpoint"
-    message: "An S3 endpoint is required for delegated, static, or client-managed access."
-    expression: "!has(this.access) || has(this.access.anonymous) || this.endpoint != ''"
-  };
-
   string bucket = 1 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 63
   }];
-  // Account's R2 S3 endpoint, including its jurisdiction when applicable. Required for S3 access.
-  // Signing region is auto.
-  string endpoint = 2 [
-    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
-    (buf.validate.field).string = {
-      uri: true
-      max_bytes: 2048
-      pattern: "^https://[^/?#@]+/?$"
-    }
-  ];
+  // R2 S3 endpoint, including jurisdiction if applicable.
+  string endpoint = 2 [(buf.validate.field).string = {
+    uri: true
+    max_bytes: 2048
+    pattern: "^https://[^/?#@]+/?$"
+  }];
   R2StorageAccess access = 3;
 }
 
@@ -154,7 +120,7 @@ message TigrisBucketReference {
     min_bytes: 1
     max_bytes: 63
   }];
-  S3CompatibleStorageAccess access = 2;
+  TigrisStorageAccess access = 2;
 }
 
 // AWSS3BucketReference identifies an Amazon Web Services S3 bucket and its region.
@@ -181,14 +147,14 @@ message GCSBucketReference {
     min_bytes: 1
     max_bytes: 128
   }];
-  // Optional bucket location, such as europe-west2, EUR4, or EU. May be a region, dual-region, or multi-region.
+  // Optional bucket location, such as europe-west2, EUR4, or EU.
   string location = 3 [(buf.validate.field).string.max_bytes = 128];
   GCSStorageAccess access = 4;
 }
 
 // AzureBlobReference identifies a container in an Azure storage account.
 message AzureBlobReference {
-  // Full ARM resource ID of the storage account, not its URL or a connection string.
+  // Full ARM resource ID of the storage account.
   string storage_account_resource_id = 1 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 2048
@@ -197,7 +163,7 @@ message AzureBlobReference {
     min_bytes: 1
     max_bytes: 63
   }];
-  // Optional primary region of the storage account, such as westeurope. Containers use their account's region.
+  // Optional storage account region, such as westeurope.
   string region = 3 [(buf.validate.field).string.max_bytes = 128];
   AzureBlobStorageAccess access = 4;
 }
@@ -223,13 +189,53 @@ message TriggeredJobs {
 }
 
 // CreateStorageLocationRequest registers an existing bucket, container, or directory.
-// Omit the provider's access field for notification-only use. Cloud permissions can be configured after creation.
+// Supply complete credentials when selecting a credential-backed access method.
 message CreateStorageLocationRequest {
   string name = 1 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 1024
   }];
   StorageLocationReference reference = 2 [(buf.validate.field).required = true];
+}
+
+// TestStorageAccessRequest tests a saved location or an unsaved configuration without storing it.
+message TestStorageAccessRequest {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "storage_location_id",
+      "create_request"
+    ]
+    required: true
+  };
+
+  tilebox.v1.ID storage_location_id = 1;
+  // Read this object without listing. If omitted, list one page and read a nonempty object when available.
+  string object_key = 2 [
+    features.field_presence = EXPLICIT,
+    (buf.validate.field).string = {
+      min_bytes: 1
+      max_bytes: 4096
+      not_contains: "\x00"
+    },
+    (buf.validate.field).cel = {
+      id: "storage_access_test.object_key"
+      message: "Use a relative object key without empty, '.' or '..' components."
+      expression: "this.split('/').all(p, p != '' && p != '.' && p != '..')"
+    }
+  ];
+  // The same input as creation, including complete credentials for the selected access method.
+  CreateStorageLocationRequest create_request = 3 [(google.api.field_behavior) = INPUT_ONLY];
+  // Also create and delete a temporary object. A failed cleanup may leave it behind.
+  bool verify_write = 4;
+}
+
+// TestStorageAccessResponse reports each check: absent means skipped, true means passed, and false means failed.
+// Invalid requests, authorization failures, and failures to obtain credentials return RPC errors.
+message TestStorageAccessResponse {
+  bool list = 1 [features.field_presence = EXPLICIT];
+  bool read = 2 [features.field_presence = EXPLICIT];
+  bool write = 3 [features.field_presence = EXPLICIT];
+  bool delete = 4 [features.field_presence = EXPLICIT];
 }
 
 // UpdateStorageLocationRequest changes supplied fields and leaves the rest unchanged.
@@ -248,9 +254,10 @@ message UpdateStorageLocationRequest {
       max_bytes: 1024
     }
   ];
-  // Omit to keep the reference. Supply a complete reference with unchanged coordinates and root_prefix to replace access.
-  // Credential fields are patched within the same access method: supplied values replace saved values; omitted fields keep them.
-  // Omitting access within a supplied reference removes access and saved credentials; issued keys may remain valid.
+  // Supply the complete reference with unchanged resource coordinates to replace access settings.
+  // Only omitted credentials are retained within the same method; other omitted settings use their defaults.
+  // Switching methods requires complete credentials.
+  // Omitting access removes saved credentials. Issued credentials may remain valid.
   StorageLocationReference reference = 3;
 }
 
@@ -405,7 +412,7 @@ message StorageSubscriptions {
 message StorageSubscriptionEvent {
   // Unique identifier of the received event.
   tilebox.v1.ID id = 1;
-  // Object key relative to the location's root_prefix, or to the local directory root when no prefix is set.
+  // Object key within the bucket or container, or path relative to the local directory root.
   string object_key = 2 [(buf.validate.field).string = {
     min_bytes: 1
     max_bytes: 4096
@@ -455,7 +462,7 @@ message TriggeredStorageEvent {
   tilebox.v1.ID storage_location_id = 1;
   // The type of the storage event, e.g. created
   StorageEventType type = 2;
-  // Object key relative to the location root, with root_prefix removed.
+  // Object key within the bucket or container, or path relative to the local directory root.
   string location = 3;
 }
 
@@ -467,17 +474,17 @@ service StorageLocationService {
   rpc GetStorageLocation(tilebox.v1.ID) returns (StorageLocation);
   // CreateStorageLocation registers an existing resource with optional object access.
   rpc CreateStorageLocation(CreateStorageLocationRequest) returns (StorageLocation);
-  // UpdateStorageLocation changes the name or access settings. Subscriptions are unchanged.
+  // UpdateStorageLocation changes the name or access settings. Access changes require ownership.
   rpc UpdateStorageLocation(UpdateStorageLocationRequest) returns (StorageLocation);
   // DeleteStorageLocation removes the location and its subscriptions from Tilebox without deleting cloud resources.
   rpc DeleteStorageLocation(tilebox.v1.ID) returns (google.protobuf.Empty);
 
-  // TestStorageAccess checks listing or reading without writing objects. Requires management permission.
-  // Failures use RPC errors. Client-managed access cannot be tested by Tilebox.
-  rpc TestStorageAccess(TestStorageAccessRequest) returns (google.protobuf.Empty);
-  // CreateStorageAccessSession checks data-access permission and returns static or delegated credentials.
-  // Returns FAILED_PRECONDITION for absent, anonymous, or client-managed access; configure those clients from the location.
-  // Call again to renew. Responses use Cache-Control: no-store; errors omit provider secrets.
+  // TestStorageAccess checks object access. A page without nonempty objects skips the read check.
+  // Saved locations require read permission; drafts require creation access.
+  // Server tests require public HTTPS endpoints on port 443. Local and client-managed access cannot be tested.
+  rpc TestStorageAccess(TestStorageAccessRequest) returns (TestStorageAccessResponse);
+  // CreateStorageAccessSession returns client credentials. Location readers may request read or read/write access.
+  // Returns FAILED_PRECONDITION for absent, anonymous, or client-managed access.
   rpc CreateStorageAccessSession(CreateStorageAccessSessionRequest) returns (StorageAccessSession);
 
   // CreateStorageSubscription registers notification delivery and returns the provider setup values.
