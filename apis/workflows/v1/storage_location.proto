@@ -238,6 +238,51 @@ message TestStorageAccessResponse {
   bool delete = 4 [features.field_presence = EXPLICIT];
 }
 
+// ListStorageObjectsRequest lists objects in a saved storage location.
+message ListStorageObjectsRequest {
+  tilebox.v1.ID storage_location_id = 1 [(buf.validate.field).required = true];
+  // Match keys starting with this string. Use a trailing slash to select a folder.
+  string prefix = 2 [(buf.validate.field).string = {
+    max_bytes: 4096
+    not_contains: "\x00"
+  }];
+  // Empty lists all matching objects; "/" groups nested keys into common_prefixes.
+  string delimiter = 3 [(buf.validate.field).string = {
+    in: [
+      "",
+      "/"
+    ]
+  }];
+  // Maximum combined number of objects and common prefixes. Zero defaults to 100.
+  int32 page_size = 4 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  // Opaque token from the previous response. Empty starts a new listing.
+  // Keep storage_location_id, prefix, and delimiter unchanged between pages.
+  string page_token = 5;
+}
+
+// StorageObject contains metadata returned by an object listing.
+message StorageObject {
+  // Full object key relative to the bucket or container root, including the requested prefix.
+  string key = 1;
+  // Object size in bytes.
+  int64 size = 2;
+  // Last modification time, absent when unavailable.
+  google.protobuf.Timestamp last_modified = 3;
+}
+
+// ListStorageObjectsResponse contains one page of objects and grouped prefixes.
+// Results may change between pages; listing does not provide a snapshot.
+message ListStorageObjectsResponse {
+  repeated StorageObject objects = 1;
+  // Full prefixes ending in "/", returned when delimiter is "/". Use one as prefix to browse it.
+  repeated string common_prefixes = 2;
+  // Empty when finished. A short or empty page may still have a next token.
+  string next_page_token = 3;
+}
+
 // UpdateStorageLocationRequest changes supplied fields and leaves the rest unchanged.
 message UpdateStorageLocationRequest {
   option (buf.validate.message).cel = {
@@ -486,6 +531,9 @@ service StorageLocationService {
   // CreateStorageAccessSession returns client credentials. Location readers may request read or read/write access.
   // Returns FAILED_PRECONDITION for absent, anonymous, or client-managed access.
   rpc CreateStorageAccessSession(CreateStorageAccessSessionRequest) returns (StorageAccessSession);
+  // ListStorageObjects lists bucket or container contents. Requires read permission on the location.
+  // Returns FAILED_PRECONDITION for absent or client-managed access, or local locations.
+  rpc ListStorageObjects(ListStorageObjectsRequest) returns (ListStorageObjectsResponse);
 
   // CreateStorageSubscription registers notification delivery and returns the provider setup values.
   rpc CreateStorageSubscription(CreateStorageSubscriptionRequest) returns (StorageSubscription);
